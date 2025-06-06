@@ -91,9 +91,20 @@ const Header: React.FC = () => {
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
-            {loading ? (
-              <div className="h-8 w-20 bg-gray-200 animate-pulse rounded"></div>
+            {!mounted ? (
+              // Показываем skeleton до полной загрузки
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-16 bg-gray-200 animate-pulse rounded"></div>
+                <div className="h-8 w-20 bg-gray-200 animate-pulse rounded"></div>
+              </div>
+            ) : loading ? (
+              // Показываем skeleton во время загрузки auth
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-16 bg-gray-200 animate-pulse rounded"></div>
+                <div className="h-8 w-20 bg-gray-200 animate-pulse rounded"></div>
+              </div>
             ) : user && profile ? (
+              // Авторизованный пользователь
               <>
                 <div className="hidden md:flex items-center gap-2 text-sm text-gray-600">
                   <span>{getRoleDisplayName(profile.role)}</span>
@@ -119,6 +130,7 @@ const Header: React.FC = () => {
                 </Button>
               </>
             ) : (
+              // Неавторизованный пользователь
               <>
                 <Link href="/auth/sign-in">
                   <Button variant="outline" size="sm" className="text-gray-700">

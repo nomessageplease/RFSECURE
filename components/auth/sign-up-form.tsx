@@ -12,14 +12,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/hooks/use-auth"
 import Link from "next/link"
-import { AlertCircle, User, Building2 } from "lucide-react"
+import { AlertCircle, User, UserCheck } from "lucide-react"
 
 export function SignUpForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [fullName, setFullName] = useState("")
-  const [role, setRole] = useState<"guard" | "chop">("guard")
+  const [role, setRole] = useState<"guard" | "chop_hr">("guard")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -65,10 +65,17 @@ export function SignUpForm() {
     setSuccess(true)
     setLoading(false)
 
-    // Перенаправляем на страницу входа через 2 секунды
-    setTimeout(() => {
-      router.push("/auth/sign-in")
-    }, 2000)
+    // Если выбрана роль HR ЧОПа, перенаправляем на форму заявки
+    if (role === "chop_hr") {
+      setTimeout(() => {
+        router.push("/chop-connection-request")
+      }, 2000)
+    } else {
+      // Для обычных пользователей - на страницу входа
+      setTimeout(() => {
+        router.push("/auth/sign-in")
+      }, 2000)
+    }
   }
 
   return (
@@ -81,7 +88,9 @@ export function SignUpForm() {
         {success ? (
           <Alert className="mb-4 bg-green-50 border-green-200">
             <AlertDescription className="text-green-800">
-              Регистрация успешна! Проверьте вашу почту для подтверждения аккаунта.
+              {role === "chop_hr"
+                ? "Регистрация успешна! Сейчас вы будете перенаправлены на форму заявки для подключения к ЧОПу."
+                : "Регистрация успешна! Проверьте вашу почту для подтверждения аккаунта."}
             </AlertDescription>
           </Alert>
         ) : (
@@ -100,7 +109,7 @@ export function SignUpForm() {
 
             <div className="space-y-2">
               <Label htmlFor="role">Тип аккаунта *</Label>
-              <Select value={role} onValueChange={(value: "guard" | "chop") => setRole(value)}>
+              <Select value={role} onValueChange={(value: "guard" | "chop_hr") => setRole(value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите тип аккаунта" />
                 </SelectTrigger>
@@ -114,17 +123,23 @@ export function SignUpForm() {
                       </div>
                     </div>
                   </SelectItem>
-                  <SelectItem value="chop">
+                  <SelectItem value="chop_hr">
                     <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4" />
+                      <UserCheck className="h-4 w-4" />
                       <div>
-                        <div className="font-medium">Организация</div>
-                        <div className="text-sm text-gray-500">Размещаю вакансии и ищу сотрудников</div>
+                        <div className="font-medium">HR представитель ЧОПа</div>
+                        <div className="text-sm text-gray-500">Представляю интересы охранной организации</div>
                       </div>
                     </div>
                   </SelectItem>
                 </SelectContent>
               </Select>
+              {role === "chop_hr" && (
+                <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
+                  <strong>Внимание:</strong> После регистрации вам нужно будет подать заявку на подключение к ЧОПу.
+                  Доступ к функциям управления будет предоставлен только после одобрения модератором.
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

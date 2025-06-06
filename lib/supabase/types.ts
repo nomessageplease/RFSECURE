@@ -7,7 +7,7 @@ export type Database = {
           email: string
           full_name: string | null
           avatar_url: string | null
-          role: "user" | "guard" | "chop" | "moderator" | "admin"
+          role: "user" | "guard" | "chop" | "chop_hr" | "moderator" | "admin"
           phone: string | null
           city: string | null
           company_name: string | null
@@ -21,7 +21,7 @@ export type Database = {
           email: string
           full_name?: string | null
           avatar_url?: string | null
-          role?: "user" | "guard" | "chop" | "moderator" | "admin"
+          role?: "user" | "guard" | "chop" | "chop_hr" | "moderator" | "admin"
           phone?: string | null
           city?: string | null
           company_name?: string | null
@@ -35,7 +35,7 @@ export type Database = {
           email?: string
           full_name?: string | null
           avatar_url?: string | null
-          role?: "user" | "guard" | "chop" | "moderator" | "admin"
+          role?: "user" | "guard" | "chop" | "chop_hr" | "moderator" | "admin"
           phone?: string | null
           city?: string | null
           company_name?: string | null
@@ -43,6 +43,162 @@ export type Database = {
           is_verified?: boolean
           created_at?: string
           updated_at?: string
+        }
+      }
+      chops: {
+        Row: {
+          id: string
+          name: string
+          inn: string | null
+          license_number: string | null
+          address: string | null
+          phone: string | null
+          email: string | null
+          website: string | null
+          description: string | null
+          logo_url: string | null
+          status: "pending" | "verified" | "unverified" | "suspended"
+          rating: number
+          reviews_count: number
+          employees_count: number
+          founded_year: number | null
+          created_at: string
+          updated_at: string
+          created_by: string | null
+        }
+        Insert: {
+          id?: string
+          name: string
+          inn?: string | null
+          license_number?: string | null
+          address?: string | null
+          phone?: string | null
+          email?: string | null
+          website?: string | null
+          description?: string | null
+          logo_url?: string | null
+          status?: "pending" | "verified" | "unverified" | "suspended"
+          rating?: number
+          reviews_count?: number
+          employees_count?: number
+          founded_year?: number | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          inn?: string | null
+          license_number?: string | null
+          address?: string | null
+          phone?: string | null
+          email?: string | null
+          website?: string | null
+          description?: string | null
+          logo_url?: string | null
+          status?: "pending" | "verified" | "unverified" | "suspended"
+          rating?: number
+          reviews_count?: number
+          employees_count?: number
+          founded_year?: number | null
+          created_at?: string
+          updated_at?: string
+          created_by?: string | null
+        }
+      }
+      chop_connection_requests: {
+        Row: {
+          id: string
+          user_id: string
+          chop_id: string | null
+          new_chop_name: string | null
+          new_chop_inn: string | null
+          new_chop_address: string | null
+          new_chop_phone: string | null
+          new_chop_email: string | null
+          applicant_position: string
+          applicant_phone: string | null
+          documents_urls: string[] | null
+          comment: string | null
+          status: "pending" | "approved" | "rejected"
+          rejection_reason: string | null
+          reviewed_by: string | null
+          reviewed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          chop_id?: string | null
+          new_chop_name?: string | null
+          new_chop_inn?: string | null
+          new_chop_address?: string | null
+          new_chop_phone?: string | null
+          new_chop_email?: string | null
+          applicant_position: string
+          applicant_phone?: string | null
+          documents_urls?: string[] | null
+          comment?: string | null
+          status?: "pending" | "approved" | "rejected"
+          rejection_reason?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          chop_id?: string | null
+          new_chop_name?: string | null
+          new_chop_inn?: string | null
+          new_chop_address?: string | null
+          new_chop_phone?: string | null
+          new_chop_email?: string | null
+          applicant_position?: string
+          applicant_phone?: string | null
+          documents_urls?: string[] | null
+          comment?: string | null
+          status?: "pending" | "approved" | "rejected"
+          rejection_reason?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      chop_hr_assignments: {
+        Row: {
+          id: string
+          user_id: string
+          chop_id: string
+          role: "hr" | "admin" | "owner"
+          permissions: string[]
+          assigned_by: string | null
+          assigned_at: string
+          is_active: boolean
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          chop_id: string
+          role?: "hr" | "admin" | "owner"
+          permissions?: string[]
+          assigned_by?: string | null
+          assigned_at?: string
+          is_active?: boolean
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          chop_id?: string
+          role?: "hr" | "admin" | "owner"
+          permissions?: string[]
+          assigned_by?: string | null
+          assigned_at?: string
+          is_active?: boolean
         }
       }
       jobs: {
@@ -170,3 +326,6 @@ export type Database = {
 export type Profile = Database["public"]["Tables"]["profiles"]["Row"]
 export type Job = Database["public"]["Tables"]["jobs"]["Row"]
 export type JobApplication = Database["public"]["Tables"]["job_applications"]["Row"]
+export type Chop = Database["public"]["Tables"]["chops"]["Row"]
+export type ChopConnectionRequest = Database["public"]["Tables"]["chop_connection_requests"]["Row"]
+export type ChopHrAssignment = Database["public"]["Tables"]["chop_hr_assignments"]["Row"]
