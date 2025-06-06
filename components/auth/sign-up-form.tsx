@@ -9,14 +9,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useAuth } from "@/hooks/use-auth"
 import Link from "next/link"
-import { AlertCircle } from "lucide-react"
+import { AlertCircle, User, Building2 } from "lucide-react"
 
 export function SignUpForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [fullName, setFullName] = useState("")
+  const [role, setRole] = useState<"guard" | "chop">("guard")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -29,13 +32,26 @@ export function SignUpForm() {
     setLoading(true)
     setError(null)
 
-    if (!email || !password) {
-      setError("Пожалуйста, заполните все поля")
+    // Валидация
+    if (!email || !password || !fullName) {
+      setError("Пожалуйста, заполните все обязательные поля")
       setLoading(false)
       return
     }
 
-    const { data, error } = await signUp(email, password, fullName)
+    if (password !== confirmPassword) {
+      setError("Пароли не совпадают")
+      setLoading(false)
+      return
+    }
+
+    if (password.length < 6) {
+      setError("Пароль должен содержать минимум 6 символов")
+      setLoading(false)
+      return
+    }
+
+    const { data, error } = await signUp(email, password, fullName, role)
 
     if (error) {
       console.error("Ошибка регистрации:", error)
@@ -71,17 +87,48 @@ export function SignUpForm() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="fullName">Имя</Label>
+              <Label htmlFor="fullName">Полное имя *</Label>
               <Input
                 id="fullName"
                 type="text"
                 placeholder="Иван Иванов"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
+                required
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="role">Тип аккаунта *</Label>
+              <Select value={role} onValueChange={(value: "guard" | "chop") => setRole(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите тип аккаунта" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="guard">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      <div>
+                        <div className="font-medium">Охранник</div>
+                        <div className="text-sm text-gray-500">Ищу работу в сфере охраны</div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="chop">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4" />
+                      <div>
+                        <div className="font-medium">Организация</div>
+                        <div className="text-sm text-gray-500">Размещаю вакансии и ищу сотрудников</div>
+                      </div>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
               <Input
                 id="email"
                 type="email"
@@ -91,14 +138,27 @@ export function SignUpForm() {
                 required
               />
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="password">Пароль</Label>
+              <Label htmlFor="password">Пароль *</Label>
               <Input
                 id="password"
                 type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Подтвердите пароль *</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 required
               />
             </div>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Shield, Star, MapPin, Users, Clock, Grid3X3, List, Award, Phone, ArrowUpDown } from "lucide-react"
+import { Search, Star, MapPin, Users, Clock, Grid3X3, List, Award, Phone, ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -14,6 +14,7 @@ import { UserRoleSwitcher } from "@/components/user-role-switcher"
 import { RegistrationBanner } from "@/components/registration-banner"
 import { AuthRequiredOverlay } from "@/components/auth-guard"
 import { useAuth } from "@/hooks/use-auth"
+import Header from "@/components/header"
 
 const companies = [
   {
@@ -114,57 +115,7 @@ export default function CatalogPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <UserRoleSwitcher />
-      {/* Header */}
-      <header className="border-b bg-white sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <Shield className="h-7 w-7 text-gray-800" />
-              <h1 className="text-xl font-bold text-gray-900">Охрана РФ</h1>
-            </Link>
-            <nav className="hidden md:flex items-center gap-4 ml-8">
-              <Link href="/" className="text-gray-700 hover:text-gray-900 transition-colors text-sm">
-                Главная
-              </Link>
-              <Link href="/chops" className="text-gray-900 font-medium text-sm">
-                Организации
-              </Link>
-              <Link href="/forum" className="text-gray-700 hover:text-gray-900 transition-colors text-sm">
-                Форум
-              </Link>
-              <Link href="/jobs" className="text-gray-700 hover:text-gray-900 transition-colors text-sm">
-                Вакансии
-              </Link>
-              <Link href="/news" className="text-gray-700 hover:text-gray-900 transition-colors text-sm">
-                Новости
-              </Link>
-            </nav>
-            <div className="ml-auto flex items-center gap-3">
-              {user ? (
-                <>
-                  <Link href="/profile" className="text-gray-700 hover:text-gray-900 transition-colors text-sm">
-                    Личный кабинет
-                  </Link>
-                  <Button size="sm" className="bg-gray-900 hover:bg-gray-800">
-                    Добавить компанию
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Link href="/auth/sign-in" className="text-gray-700 hover:text-gray-900 transition-colors text-sm">
-                    Войти
-                  </Link>
-                  <Link href="/auth/sign-up">
-                    <Button size="sm" className="bg-gray-900 hover:bg-gray-800">
-                      Регистрация
-                    </Button>
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header />
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Page Header */}

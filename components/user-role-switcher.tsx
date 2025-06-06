@@ -36,8 +36,8 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
   return (
     <UserRoleContext.Provider value={{ userRole, setUserRole }}>
       {children}
-      {/* Показываем переключатель только для суперадмина */}
-      {user?.email === "superadmin@chopy.ru" && <UserRoleSwitcher />}
+      {/* Показываем переключатель только для админов */}
+      {profile?.role === "admin" && <UserRoleSwitcher />}
     </UserRoleContext.Provider>
   )
 }
