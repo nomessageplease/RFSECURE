@@ -120,7 +120,7 @@ export function useAuth() {
         password,
         options: {
           data: {
-            full_name: fullName || "",
+            full_name: fullName || "Пользователь",
             role: role || "guard",
           },
         },
@@ -192,6 +192,29 @@ export function useAuth() {
     return { data, error }
   }
 
+  // Создание профиля вручную (если триггер не сработал)
+  const createProfile = async (profileData: Partial<Profile>) => {
+    if (!user) return { error: new Error("Не авторизован") }
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .insert({
+        id: user.id,
+        email: user.email || "",
+        full_name: profileData.full_name || "Пользователь",
+        role: profileData.role || "guard",
+        is_verified: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        ...profileData,
+      })
+      .select()
+      .single()
+
+    if (data) setProfile(data)
+    return { data, error }
+  }
+
   return {
     user,
     profile,
@@ -200,5 +223,6 @@ export function useAuth() {
     signIn,
     signOut,
     updateProfile,
+    createProfile,
   }
 }

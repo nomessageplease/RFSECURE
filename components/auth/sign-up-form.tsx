@@ -3,141 +3,125 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAuth } from "@/hooks/use-auth"
-import { Mail, Lock, AlertCircle, CheckCircle } from "lucide-react"
-import { validateEmailForRegistration } from "@/lib/utils/email-validator"
-import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { AlertCircle } from "lucide-react"
 
 export function SignUpForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
+  const [fullName, setFullName] = useState("")
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
   const { signUp } = useAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-
-    // Валидация email
-    const emailValidation = validateEmailForRegistration(email)
-    if (!emailValidation.isValid) {
-      setMessage({ type: "error", text: emailValidation.error! })
-      return
-    }
-
-    if (password !== confirmPassword) {
-      setMessage({ type: "error", text: "Пароли не совпадают" })
-      return
-    }
-
-    if (password.length < 6) {
-      setMessage({ type: "error", text: "Пароль должен содержать минимум 6 символов" })
-      return
-    }
-
     setLoading(true)
-    setMessage(null)
+    setError(null)
 
-    const { data, error } = await signUp(email, password)
+    if (!email || !password) {
+      setError("Пожалуйста, заполните все поля")
+      setLoading(false)
+      return
+    }
+
+    const { data, error } = await signUp(email, password, fullName)
 
     if (error) {
-      setMessage({ type: "error", text: error.message })
-    } else {
-      setMessage({
-        type: "success",
-        text: "Регистрация успешна! Проверьте почту для подтверждения аккаунта.",
-      })
-
-      // Перенаправляем на создание профиля через 2 секунды
-      setTimeout(() => {
-        router.push("/profile/create")
-      }, 2000)
+      console.error("Ошибка регистрации:", error)
+      setError(
+        error.message === "User already registered" ? "Пользователь с таким email уже зарегистрирован" : error.message,
+      )
+      setLoading(false)
+      return
     }
 
+    setSuccess(true)
     setLoading(false)
+
+    // Перенаправляем на страницу входа через 2 секунды
+    setTimeout(() => {
+      router.push("/auth/sign-in")
+    }, 2000)
   }
 
   return (
     <Card className="w-full max-w-md mx-auto">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl font-bold">Регистрация</CardTitle>
-        <CardDescription>Создайте аккаунт для доступа к платформе</CardDescription>
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold text-center">Регистрация</CardTitle>
+        <CardDescription className="text-center">Создайте аккаунт для доступа к платформе</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        {success ? (
+          <Alert className="mb-4 bg-green-50 border-green-200">
+            <AlertDescription className="text-green-800">
+              Регистрация успешна! Проверьте вашу почту для подтверждения аккаунта.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Имя</Label>
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="Иван Иванов"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="Введите ваш email"
+                placeholder="example@mail.ru"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="pl-10"
                 required
               />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="password">Пароль</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <div className="space-y-2">
+              <Label htmlFor="password">Пароль</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Введите пароль"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10"
                 required
               />
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="Повторите пароль"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="pl-10"
-                required
-              />
-            </div>
-          </div>
-
-          {message && (
-            <Alert className={message.type === "error" ? "border-red-200 bg-red-50" : "border-green-200 bg-green-50"}>
-              {message.type === "error" ? (
+            {error && (
+              <Alert className="bg-red-50 border-red-200">
                 <AlertCircle className="h-4 w-4 text-red-600" />
-              ) : (
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              )}
-              <AlertDescription className={message.type === "error" ? "text-red-800" : "text-green-800"}>
-                {message.text}
-              </AlertDescription>
-            </Alert>
-          )}
+                <AlertDescription className="text-red-800">{error}</AlertDescription>
+              </Alert>
+            )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Регистрация..." : "Зарегистрироваться"}
-          </Button>
-        </form>
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Регистрация..." : "Зарегистрироваться"}
+            </Button>
+
+            <div className="text-center text-sm">
+              Уже есть аккаунт?{" "}
+              <Link href="/auth/sign-in" className="text-blue-600 hover:underline">
+                Войти
+              </Link>
+            </div>
+          </form>
+        )}
       </CardContent>
     </Card>
   )
