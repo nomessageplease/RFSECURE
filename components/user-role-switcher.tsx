@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { useState, createContext, useContext, useEffect } from "react"
-import { Button } from "@/components/ui/button"
 import { useAuth } from "@/hooks/use-auth"
 
 export type UserRole = "guard" | "chop" | "moderator" | "admin"
@@ -36,8 +35,8 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
   return (
     <UserRoleContext.Provider value={{ userRole, setUserRole }}>
       {children}
-      {/* Показываем переключатель только для админов */}
-      {profile?.role === "admin" && <UserRoleSwitcher />}
+      {/* Показываем переключатель только для суперадмина */}
+      {user?.email === "superadmin@chopy.ru" && <UserRoleSwitcher />}
     </UserRoleContext.Provider>
   )
 }
@@ -81,14 +80,7 @@ function UserRoleSwitcher() {
     }
   }
 
-  return (
-    <Button
-      onClick={toggleUserRole}
-      className={`fixed bottom-4 right-4 z-[9999] ${getRoleColor()} text-white font-bold py-2 px-4 rounded-full shadow-lg transition-all duration-200 hover:scale-105`}
-    >
-      {getRoleLabel()}
-    </Button>
-  )
+  return null
 }
 
 export { UserRoleSwitcher }
