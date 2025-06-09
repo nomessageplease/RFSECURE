@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Search, ArrowUpDown, Grid3X3, List } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Search, ArrowUpDown, Grid3X3, List, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -11,63 +11,32 @@ import { RegistrationBanner } from "@/components/registration-banner"
 import { useAuth } from "@/hooks/use-auth"
 import Header from "@/components/header"
 import { ChopCard } from "@/components/chop-card"
+import { createClient } from "@/lib/supabase/client"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
-const companies = [
-  {
-    id: 1,
-    name: "Охранное Агентство Авангард",
-    rating: 4.8,
-    reviewCount: 156,
-    license: "ЧО-001234",
-    specialization: ["Объекты", "Мероприятия", "VIP"],
-    location: "Москва",
-    address: "ул. Тверская, д. 15, стр. 1",
-    phone: "+7 (495) 123-45-67",
-    email: "info@avangard-security.ru",
-    experience: 15,
-    employees: 450,
-    verified: true,
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/%D0%BB%D0%BE%D0%B3%D0%BE%201-pSoYbxeRfeKKzvB9MhQQpkC67sQnGz.jpeg",
-    description: "Ведущая охранная компания Москвы с 15-летним опытом работы.",
-    price: "от 25 000 ₽/мес",
-  },
-  {
-    id: 2,
-    name: "Охранное Предприятие Барс",
-    rating: 4.6,
-    reviewCount: 89,
-    license: "ЧО-005678",
-    specialization: ["Торговые центры", "Склады"],
-    location: "Санкт-Петербург",
-    address: "пр. Невский, д. 45",
-    phone: "+7 (812) 234-56-78",
-    email: "info@bars-security.ru",
-    experience: 8,
-    employees: 280,
-    verified: true,
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/%D0%BB%D0%BE%D0%B3%D0%BE%202-LPcWjTR8tqF96i00nlQSHBA3vXRfbt.jpeg",
-    description: "Специализируемся на охране торговых объектов и складских комплексов.",
-    price: "от 20 000 ₽/мес",
-  },
-  {
-    id: 3,
-    name: "Агентство Комплексной Безопасности АКБ",
-    rating: 4.4,
-    reviewCount: 203,
-    license: "ЧО-009012",
-    specialization: ["Жилые комплексы", "Офисы"],
-    location: "Екатеринбург",
-    address: "ул. Ленина, д. 78",
-    phone: "+7 (343) 345-67-89",
-    email: "info@akb-security.ru",
-    experience: 12,
-    employees: 320,
-    verified: false,
-    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/%D0%BB%D0%BE%D0%B3%D0%BE%203-srieVVmZm4t05KIb2gr0dpHzoEdFiS.jpeg",
-    description: "Комплексные решения безопасности для жилых и офисных объектов.",
-    price: "от 18 000 ₽/мес",
-  },
-]
+// Типы данных
+interface Chop {
+  id: string
+  name: string | null
+  inn: string
+  website: string | null
+  description: string | null
+  address: string | null
+  phone: string | null
+  email: string | null
+  license_number: string | null
+  logo_url: string | null
+  status: string | null
+  rating: number | null
+  reviews_count: number | null
+  employees_count: number | null
+  created_at: string | null
+  specialization?: string[]
+  location?: string
+  experience?: number
+  verified?: boolean
+  price?: string
+}
 
 const cities = ["Все города", "Москва", "Санкт-Петербург", "Екатеринбург", "Новосибирск", "Казань"]
 const specializations = ["Все услуги", "Объекты", "VIP-охрана", "Мероприятия", "Торговые центры", "Банки", "Офисы"]
@@ -81,14 +50,79 @@ export default function CatalogPage() {
   const [sortBy, setSortBy] = useState("rating")
   const [showVerifiedOnly, setShowVerifiedOnly] = useState(false)
 
-  const filteredCompanies = companies.filter((company) => {
+  // Состояния для загрузки данных
+  const [chops, setChops] = useState<Chop[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [debugInfo, setDebugInfo] = useState<any>(null)
+
+  const supabase = createClient()
+
+  // Загрузка данных из Supabase
+  useEffect(() => {
+    async function loadChops() {
+      try {
+        console.log("Загружаем ЧОПы из базы данных...")
+        setLoading(true)
+        setError(null)
+
+        const { data, error } = await supabase.from("chops").select("*").order("created_at", { ascending: false })
+
+        console.log("Результат запроса:", { data, error })
+
+        if (error) {
+          console.error("Ошибка при загрузке ЧОПов:", error)
+          setError(`Ошибка при загрузке данных: ${error.message}`)
+          setDebugInfo({ error })
+          return
+        }
+
+        if (!data || data.length === 0) {
+          console.log("ЧОПы не найдены")
+          setChops([])
+          return
+        }
+
+        // Преобразуем данные для отображения
+        const formattedChops: Chop[] = data.map((chop) => ({
+          ...chop,
+          // Добавляем недостающие поля для совместимости с ChopCard
+          specialization: ["Объекты"], // Заглушка
+          location: "Москва", // Заглушка
+          experience: 5, // Заглушка
+          verified: true, // Заглушка
+          price: "от 20 000 ₽/мес", // Заглушка
+        }))
+
+        console.log(`Загружено ${formattedChops.length} ЧОПов`)
+        setChops(formattedChops)
+      } catch (err: any) {
+        console.error("Ошибка при загрузке ЧОПов:", err)
+        setError(`Произошла ошибка: ${err.message}`)
+        setDebugInfo({ error: err })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadChops()
+  }, [])
+
+  // Фильтрация и сортировка
+  const filteredCompanies = chops.filter((company) => {
     const matchesSearch =
-      company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      company.description.toLowerCase().includes(searchQuery.toLowerCase())
+      company.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      false ||
+      company.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      false ||
+      company.inn?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      false
+
     const matchesCity = selectedCity === "Все города" || company.location === selectedCity
     const matchesSpecialization =
-      selectedSpecialization === "Все услуги" || company.specialization.includes(selectedSpecialization)
-    const matchesVerified = !showVerifiedOnly || company.verified
+      selectedSpecialization === "Все услуги" || company.specialization?.includes(selectedSpecialization) || false
+
+    const matchesVerified = !showVerifiedOnly || company.verified || false
 
     return matchesSearch && matchesCity && matchesSpecialization && matchesVerified
   })
@@ -96,13 +130,15 @@ export default function CatalogPage() {
   const sortedCompanies = [...filteredCompanies].sort((a, b) => {
     switch (sortBy) {
       case "rating":
-        return b.rating - a.rating
+        return (b.rating || 0) - (a.rating || 0)
       case "reviews":
-        return b.reviewCount - a.reviewCount
+        return (b.reviews_count || 0) - (a.reviews_count || 0)
       case "experience":
-        return b.experience - a.experience
-      case "price":
-        return Number.parseInt(a.price.replace(/\D/g, "")) - Number.parseInt(b.price.replace(/\D/g, ""))
+        return (b.experience || 0) - (a.experience || 0)
+      case "name":
+        return (a.name || "").localeCompare(b.name || "")
+      case "date":
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
       default:
         return 0
     }
@@ -118,7 +154,7 @@ export default function CatalogPage() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-3">Организации</h1>
           <p className="text-lg text-gray-600">
-            Найдите надежную охранную компанию среди {companies.length} проверенных организаций
+            Найдите надежную охранную компанию среди {chops.length} проверенных организаций
           </p>
         </div>
 
@@ -187,7 +223,8 @@ export default function CatalogPage() {
                   <SelectItem value="rating">По рейтингу</SelectItem>
                   <SelectItem value="reviews">По отзывам</SelectItem>
                   <SelectItem value="experience">По опыту</SelectItem>
-                  <SelectItem value="price">По цене</SelectItem>
+                  <SelectItem value="name">По названию</SelectItem>
+                  <SelectItem value="date">По дате создания</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -236,25 +273,61 @@ export default function CatalogPage() {
           </div>
         </div>
 
-        {/* Companies Grid/List */}
-        <div className={viewMode === "grid" ? "grid md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
-          {sortedCompanies.map((company) => (
-            <ChopCard key={company.id} chop={company} viewMode={viewMode} />
-          ))}
-        </div>
+        {/* Error message */}
+        {error && (
+          <Alert className="mb-6 border-red-200 bg-red-50">
+            <AlertDescription className="text-red-800">
+              {error}
+              {debugInfo && (
+                <details className="mt-2">
+                  <summary className="cursor-pointer text-sm font-medium">Подробности</summary>
+                  <pre className="mt-2 text-xs overflow-auto max-h-64 bg-white p-2 rounded border">
+                    {JSON.stringify(debugInfo, null, 2)}
+                  </pre>
+                </details>
+              )}
+            </AlertDescription>
+          </Alert>
+        )}
 
-        {/* Pagination */}
-        <div className="flex justify-center mt-12">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" disabled>
-              Предыдущая
-            </Button>
-            <Button variant="default">1</Button>
-            <Button variant="outline">2</Button>
-            <Button variant="outline">3</Button>
-            <Button variant="outline">Следующая</Button>
+        {/* Loading state */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-4" />
+            <p className="text-gray-600">Загрузка данных...</p>
           </div>
-        </div>
+        ) : sortedCompanies.length === 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Компании не найдены</h3>
+            <p className="text-gray-600">
+              {chops.length === 0
+                ? "В базе данных пока нет ЧОПов. Создайте первый!"
+                : "По заданным критериям не найдено ни одной компании. Попробуйте изменить параметры поиска."}
+            </p>
+          </div>
+        ) : (
+          /* Companies Grid/List */
+          <div className={viewMode === "grid" ? "grid md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
+            {sortedCompanies.map((company) => (
+              <ChopCard key={company.id} chop={company} viewMode={viewMode} />
+            ))}
+          </div>
+        )}
+
+        {/* Pagination - only show if we have companies */}
+        {!loading && sortedCompanies.length > 0 && (
+          <div className="flex justify-center mt-12">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" disabled>
+                Предыдущая
+              </Button>
+              <Button variant="default">1</Button>
+              <Button variant="outline">2</Button>
+              <Button variant="outline">3</Button>
+              <Button variant="outline">Следующая</Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
