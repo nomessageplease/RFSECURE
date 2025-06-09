@@ -15,10 +15,10 @@ export function CreateModeratorForm() {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    confirmPassword: "",
+    fullName: "",
+    phone: "",
   })
   const [loading, setLoading] = useState(false)
-
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
 
   const supabase = createClient()
@@ -28,15 +28,6 @@ export function CreateModeratorForm() {
     setLoading(true)
     setMessage(null)
 
-    if (formData.password !== formData.confirmPassword) {
-      setMessage({
-        type: "error",
-        text: "Пароли не совпадают",
-      })
-      setLoading(false)
-      return
-    }
-
     try {
       // Создаем пользователя через Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -44,6 +35,7 @@ export function CreateModeratorForm() {
         password: formData.password,
         options: {
           data: {
+            full_name: formData.fullName,
             role: "moderator",
           },
         },
@@ -58,6 +50,8 @@ export function CreateModeratorForm() {
         const { error: profileError } = await supabase.from("profiles").insert({
           id: authData.user.id,
           email: formData.email,
+          full_name: formData.fullName,
+          phone: formData.phone,
           role: "moderator",
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
@@ -69,14 +63,15 @@ export function CreateModeratorForm() {
 
         setMessage({
           type: "success",
-          text: `Модератор с email ${formData.email} успешно создан!`,
+          text: `Модератор ${formData.fullName} успешно создан!`,
         })
 
         // Очищаем форму
         setFormData({
           email: "",
           password: "",
-          confirmPassword: "",
+          fullName: "",
+          phone: "",
         })
       }
     } catch (error: any) {
@@ -99,6 +94,30 @@ export function CreateModeratorForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="fullName">Полное имя</Label>
+              <Input
+                id="fullName"
+                type="text"
+                value={formData.fullName}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                required
+                placeholder="Иван Иванов"
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Телефон</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+7 (999) 123-45-67"
+              />
+            </div>
+          </div>
+
           <div>
             <Label htmlFor="email">Email</Label>
             <Input
@@ -120,19 +139,6 @@ export function CreateModeratorForm() {
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required
               placeholder="Минимум 6 символов"
-              minLength={6}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-              required
-              placeholder="Повторите пароль"
               minLength={6}
             />
           </div>
