@@ -100,13 +100,6 @@ const Header: React.FC = () => {
             ) : user ? (
               // Пользователь авторизован (независимо от наличия профиля)
               <>
-                {profile && (
-                  <div className="hidden md:flex items-center gap-2 text-sm text-gray-600">
-                    <span>{getRoleDisplayName(profile.role)}</span>
-                    <span>•</span>
-                    <span>{profile.full_name}</span>
-                  </div>
-                )}
                 <Link href="/profile" className="text-gray-700 hover:text-gray-900 transition-colors text-sm">
                   Личный кабинет
                 </Link>
@@ -178,11 +171,6 @@ const Header: React.FC = () => {
               </Link>
               {user && (
                 <div className="pt-2 border-t">
-                  {profile && (
-                    <div className="text-sm text-gray-600 mb-2">
-                      {getRoleDisplayName(profile.role)} • {profile.full_name}
-                    </div>
-                  )}
                   <Link href="/profile" className="text-gray-700 hover:text-gray-900 transition-colors block mb-2">
                     Личный кабинет
                   </Link>

@@ -88,8 +88,8 @@ export function useAuth() {
             if (event === "SIGNED_UP" && profile.role === "chop_hr") {
               console.log("Перенаправление HR ЧОПа на форму заявки")
               setTimeout(() => {
-                router.push("/chop-connection-request")
-              }, 1000)
+                window.location.href = "/chop-connection-request"
+              }, 2000)
             } else {
               // Обновляем страницу для применения изменений
               router.refresh()
