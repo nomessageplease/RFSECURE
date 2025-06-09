@@ -51,12 +51,31 @@ export function CreateChopForm() {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
+      // Проверка размера файла (максимум 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setMessage({
+          type: "error",
+          text: "Размер файла не должен превышать 5MB",
+        })
+        return
+      }
+
+      // Проверка типа файла
+      if (!file.type.startsWith("image/")) {
+        setMessage({
+          type: "error",
+          text: "Можно загружать только изображения",
+        })
+        return
+      }
+
       setLogoFile(file)
       const reader = new FileReader()
       reader.onload = (e) => {
         setLogoPreview(e.target?.result as string)
       }
       reader.readAsDataURL(file)
+      setMessage(null)
     }
   }
 
@@ -159,12 +178,6 @@ export function CreateChopForm() {
         return
       }
 
-      // Преобразуем специализации в массив
-      const specializationArray = formData.specialization
-        .split(",")
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0)
-
       let logoUrl = ""
       if (logoFile) {
         setUploadingLogo(true)
@@ -173,43 +186,46 @@ export function CreateChopForm() {
             access: "public",
           })
           logoUrl = blob.url
+          console.log("Логотип загружен:", logoUrl)
         } catch (error) {
+          console.error("Ошибка загрузки логотипа:", error)
           throw new Error("Ошибка при загрузке логотипа")
         } finally {
           setUploadingLogo(false)
         }
       }
 
-      // Создаем ЧОП в базе данных
-      const { error } = await supabase.from("chops").insert({
+      // Подготавливаем данные для вставки
+      const insertData = {
         inn: formData.inn,
         website: formData.website,
         name: formData.name || null,
         description: formData.description || null,
-        location: formData.location || null,
         address: formData.address || null,
         phone: formData.phone || null,
         email: formData.email || null,
         license_number: formData.license || null,
-        specialization: specializationArray.length > 0 ? specializationArray : null,
-        employees_count: formData.employees ? Number.parseInt(formData.employees) : null,
-        experience: formData.experience ? Number.parseInt(formData.experience) : null,
-        price: formData.price || null,
         logo_url: logoUrl || null,
         status: "verified",
         rating: 0,
         reviews_count: 0,
+        employees_count: formData.employees ? Number.parseInt(formData.employees) : null,
+        founded_year: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        ogrn: formData.ogrn || null,
-        manager: formData.manager || null,
-        registration_date: formData.registration_date || null,
-        okved: formData.okved || null,
-      })
+      }
+
+      console.log("Данные для вставки:", insertData)
+
+      // Создаем ЧОП в базе данных
+      const { data, error } = await supabase.from("chops").insert(insertData).select().single()
 
       if (error) {
-        throw error
+        console.error("Ошибка Supabase:", error)
+        throw new Error(`Ошибка базы данных: ${error.message}`)
       }
+
+      console.log("ЧОП создан:", data)
 
       setMessage({
         type: "success",
@@ -241,6 +257,7 @@ export function CreateChopForm() {
       setLogoFile(null)
       setLogoPreview(null)
     } catch (error: any) {
+      console.error("Полная ошибка:", error)
       setMessage({
         type: "error",
         text: error.message || "Ошибка при создании ЧОПа",
@@ -336,6 +353,9 @@ export function CreateChopForm() {
                   className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   disabled={fetchingData}
                 />
+                <p className="text-xs text-gray-500">
+                  Максимальный размер файла: 5MB. Поддерживаемые форматы: JPG, PNG, GIF
+                </p>
                 {logoPreview && (
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <img
@@ -408,56 +428,6 @@ export function CreateChopForm() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="ogrn">ОГРН</Label>
-                  <Input
-                    id="ogrn"
-                    type="text"
-                    value={formData.ogrn}
-                    onChange={(e) => setFormData({ ...formData, ogrn: e.target.value })}
-                    placeholder="1234567890123"
-                    disabled={fetchingData}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="status">Статус</Label>
-                  <Input
-                    id="status"
-                    type="text"
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    placeholder="Действующая"
-                    disabled={fetchingData}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="manager">Руководитель</Label>
-                  <Input
-                    id="manager"
-                    type="text"
-                    value={formData.manager}
-                    onChange={(e) => setFormData({ ...formData, manager: e.target.value })}
-                    placeholder="Иванов Иван Иванович"
-                    disabled={fetchingData}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="registration_date">Дата регистрации</Label>
-                  <Input
-                    id="registration_date"
-                    type="text"
-                    value={formData.registration_date}
-                    onChange={(e) => setFormData({ ...formData, registration_date: e.target.value })}
-                    placeholder="01.01.2000"
-                    disabled={fetchingData}
-                  />
-                </div>
-              </div>
-
               <div>
                 <Label htmlFor="description">Описание</Label>
                 <Textarea
@@ -472,17 +442,6 @@ export function CreateChopForm() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="location">Город</Label>
-                  <Input
-                    id="location"
-                    type="text"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    placeholder="Москва"
-                    disabled={fetchingData}
-                  />
-                </div>
-                <div>
                   <Label htmlFor="address">Адрес</Label>
                   <Input
                     id="address"
@@ -493,9 +452,6 @@ export function CreateChopForm() {
                     disabled={fetchingData}
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="phone">Телефон</Label>
                   <Input
@@ -507,79 +463,31 @@ export function CreateChopForm() {
                     disabled={fetchingData}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="info@example.com"
-                    disabled={fetchingData}
-                  />
-                </div>
               </div>
 
               <div>
-                <Label htmlFor="okved">Основной ОКВЭД</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="okved"
-                  type="text"
-                  value={formData.okved}
-                  onChange={(e) => setFormData({ ...formData, okved: e.target.value })}
-                  placeholder="80.10 Деятельность частных охранных служб"
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="info@example.com"
                   disabled={fetchingData}
                 />
               </div>
 
               <div>
-                <Label htmlFor="specialization">Специализация (через запятую)</Label>
+                <Label htmlFor="employees">Количество сотрудников</Label>
                 <Input
-                  id="specialization"
-                  type="text"
-                  value={formData.specialization}
-                  onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-                  placeholder="Объекты, VIP-охрана, Мероприятия"
+                  id="employees"
+                  type="number"
+                  value={formData.employees}
+                  onChange={(e) => setFormData({ ...formData, employees: e.target.value })}
+                  placeholder="100"
+                  min="1"
                   disabled={fetchingData}
                 />
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="employees">Количество сотрудников</Label>
-                  <Input
-                    id="employees"
-                    type="number"
-                    value={formData.employees}
-                    onChange={(e) => setFormData({ ...formData, employees: e.target.value })}
-                    placeholder="100"
-                    min="1"
-                    disabled={fetchingData}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="experience">Опыт работы (лет)</Label>
-                  <Input
-                    id="experience"
-                    type="number"
-                    value={formData.experience}
-                    onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
-                    placeholder="5"
-                    min="0"
-                    disabled={fetchingData}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="price">Цена (от)</Label>
-                  <Input
-                    id="price"
-                    type="text"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="от 25 000 ₽/мес"
-                    disabled={fetchingData}
-                  />
-                </div>
               </div>
             </div>
           )}
