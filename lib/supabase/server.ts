@@ -23,3 +23,6 @@ export const createServerClient = () => {
     },
   )
 }
+
+// Экспортируем также как createClient для совместимости
+export const createClient = createServerClient
