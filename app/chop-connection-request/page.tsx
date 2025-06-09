@@ -4,415 +4,407 @@ import type React from "react"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/hooks/use-auth"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { AlertCircle, CheckCircle, Search } from "lucide-react"
+import { useAuth } from "@/hooks/use-auth"
 import { createClient } from "@/lib/supabase/client"
-import type { Chop } from "@/lib/supabase/types"
-import { AlertCircle, Building2, Upload, CheckCircle, Search } from "lucide-react"
-import Header from "@/components/header"
 
 export default function ChopConnectionRequestPage() {
-  const { user, profile, loading: authLoading } = useAuth()
+  const { user, profile, loading } = useAuth()
   const router = useRouter()
   const supabase = createClient()
 
-  const [chops, setChops] = useState<Chop[]>([])
-  const [filteredChops, setFilteredChops] = useState<Chop[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-
-  // Форма
-  const [requestType, setRequestType] = useState<"existing" | "new">("existing")
-  const [selectedChopId, setSelectedChopId] = useState("")
-  const [chopSearch, setChopSearch] = useState("")
-  const [position, setPosition] = useState("")
-  const [phone, setPhone] = useState("")
-  const [comment, setComment] = useState("")
-
-  // Данные нового ЧОПа
+  const [chops, setChops] = useState<any[]>([])
+  const [filteredChops, setFilteredChops] = useState<any[]>([])
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedChop, setSelectedChop] = useState<any | null>(null)
   const [newChopName, setNewChopName] = useState("")
   const [newChopInn, setNewChopInn] = useState("")
-  const [newChopAddress, setNewChopAddress] = useState("")
-  const [newChopPhone, setNewChopPhone] = useState("")
-  const [newChopEmail, setNewChopEmail] = useState("")
+  const [position, setPosition] = useState("")
+  const [contactPhone, setContactPhone] = useState("")
+  const [documents, setDocuments] = useState("")
+  const [comment, setComment] = useState("")
+  const [isNewChop, setIsNewChop] = useState(false)
+  const [loading2, setLoading2] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+  const [existingRequest, setExistingRequest] = useState<any | null>(null)
 
-  // Загрузка списка ЧОПов
+  // Проверяем, что пользователь авторизован и имеет роль chop_hr
   useEffect(() => {
-    const loadChops = async () => {
+    if (!loading && (!user || (profile && profile.role !== "chop_hr"))) {
+      router.push("/auth/sign-in")
+    }
+  }, [user, profile, loading, router])
+
+  // Загружаем список ЧОПов
+  useEffect(() => {
+    const fetchChops = async () => {
       const { data, error } = await supabase.from("chops").select("*").eq("status", "verified").order("name")
 
       if (error) {
-        console.error("Ошибка загрузки ЧОПов:", error)
-      } else {
-        setChops(data || [])
-        setFilteredChops(data || [])
+        console.error("Ошибка при загрузке ЧОПов:", error)
+        return
+      }
+
+      setChops(data || [])
+      setFilteredChops(data || [])
+    }
+
+    // Проверяем, есть ли уже заявка от этого пользователя
+    const checkExistingRequest = async () => {
+      if (!user) return
+
+      const { data, error } = await supabase
+        .from("chop_connection_requests")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+
+      if (error) {
+        console.error("Ошибка при проверке существующих заявок:", error)
+        return
+      }
+
+      if (data && data.length > 0) {
+        setExistingRequest(data[0])
       }
     }
 
-    loadChops()
-  }, [supabase])
+    fetchChops()
+    if (user) {
+      checkExistingRequest()
+    }
+  }, [supabase, user])
 
-  // Фильтрация ЧОПов по поиску
+  // Фильтрация ЧОПов при вводе в поле поиска
   useEffect(() => {
-    if (!chopSearch.trim()) {
+    if (searchTerm.trim() === "") {
       setFilteredChops(chops)
     } else {
-      const filtered = chops.filter(
-        (chop) =>
-          chop.name.toLowerCase().includes(chopSearch.toLowerCase()) || (chop.inn && chop.inn.includes(chopSearch)),
-      )
+      const filtered = chops.filter((chop) => chop.name.toLowerCase().includes(searchTerm.toLowerCase()))
       setFilteredChops(filtered)
     }
-  }, [chopSearch, chops])
-
-  // Проверка доступа
-  useEffect(() => {
-    if (!authLoading && (!user || !profile)) {
-      router.push("/auth/sign-in")
-      return
-    }
-
-    if (!authLoading && profile && profile.role !== "chop_hr") {
-      router.push("/")
-      return
-    }
-  }, [user, profile, authLoading, router])
+  }, [searchTerm, chops])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+    setLoading2(true)
     setError(null)
 
     if (!user) {
-      setError("Необходимо войти в систему")
-      setLoading(false)
+      setError("Вы должны быть авторизованы для подачи заявки")
+      setLoading2(false)
       return
     }
 
     // Валидация
-    if (!position.trim()) {
-      setError("Укажите вашу должность")
-      setLoading(false)
-      return
-    }
-
-    if (requestType === "existing" && !selectedChopId) {
-      setError("Выберите ЧОП из списка")
-      setLoading(false)
-      return
-    }
-
-    if (requestType === "new") {
-      if (!newChopName.trim()) {
-        setError("Укажите название организации")
-        setLoading(false)
+    if (isNewChop) {
+      if (!newChopName || !newChopInn) {
+        setError("Пожалуйста, укажите название и ИНН организации")
+        setLoading2(false)
         return
       }
-      if (!newChopInn.trim()) {
-        setError("Укажите ИНН организации")
-        setLoading(false)
-        return
-      }
-      if (newChopInn.length !== 10 && newChopInn.length !== 12) {
+
+      // Проверка формата ИНН (10 или 12 цифр)
+      if (!/^\d{10}$|^\d{12}$/.test(newChopInn)) {
         setError("ИНН должен содержать 10 или 12 цифр")
-        setLoading(false)
+        setLoading2(false)
         return
       }
+    } else if (!selectedChop) {
+      setError("Пожалуйста, выберите организацию из списка")
+      setLoading2(false)
+      return
+    }
+
+    if (!position || !contactPhone) {
+      setError("Пожалуйста, укажите должность и контактный телефон")
+      setLoading2(false)
+      return
     }
 
     try {
-      // Проверяем, нет ли уже активной заявки от этого пользователя
-      const { data: existingRequest } = await supabase
-        .from("chop_connection_requests")
-        .select("id, status")
-        .eq("user_id", user.id)
-        .eq("status", "pending")
-        .single()
+      // Создаем заявку
+      const { data, error } = await supabase.from("chop_connection_requests").insert({
+        user_id: user.id,
+        chop_id: isNewChop ? null : selectedChop.id,
+        new_chop_name: isNewChop ? newChopName : null,
+        new_chop_inn: isNewChop ? newChopInn : null,
+        position,
+        contact_phone: contactPhone,
+        documents,
+        comment,
+        status: "pending",
+      })
 
-      if (existingRequest) {
-        setError("У вас уже есть активная заявка на рассмотрении")
-        setLoading(false)
+      if (error) {
+        console.error("Ошибка при создании заявки:", error)
+        setError(error.message)
+        setLoading2(false)
         return
       }
 
-      const requestData = {
-        user_id: user.id,
-        applicant_position: position.trim(),
-        applicant_phone: phone.trim() || null,
-        comment: comment.trim() || null,
-        ...(requestType === "existing"
-          ? { chop_id: selectedChopId }
-          : {
-              new_chop_name: newChopName.trim(),
-              new_chop_inn: newChopInn.trim(),
-              new_chop_address: newChopAddress.trim() || null,
-              new_chop_phone: newChopPhone.trim() || null,
-              new_chop_email: newChopEmail.trim() || null,
-            }),
-      }
-
-      const { error } = await supabase.from("chop_connection_requests").insert(requestData)
-
-      if (error) {
-        throw error
-      }
-
+      console.log("Заявка успешно создана:", data)
       setSuccess(true)
+      setLoading2(false)
 
-      // Перенаправляем через 3 секунды
+      // Обновляем страницу через 3 секунды
       setTimeout(() => {
-        router.push("/profile")
+        window.location.reload()
       }, 3000)
-    } catch (error) {
-      console.error("Ошибка отправки заявки:", error)
-      setError("Произошла ошибка при отправке заявки. Попробуйте еще раз.")
-    } finally {
-      setLoading(false)
+    } catch (err) {
+      console.error("Неожиданная ошибка:", err)
+      setError("Произошла ошибка при отправке заявки")
+      setLoading2(false)
     }
   }
 
-  if (authLoading) {
+  // Если пользователь не авторизован или загрузка не завершена
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Загрузка...</p>
-        </div>
+      <div className="container max-w-4xl py-10">
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle>Загрузка...</CardTitle>
+          </CardHeader>
+        </Card>
       </div>
     )
   }
 
-  if (!user || !profile || profile.role !== "chop_hr") {
-    return null
+  // Если у пользователя уже есть заявка
+  if (existingRequest) {
+    return (
+      <div className="container max-w-4xl py-10">
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle>Заявка на подключение к ЧОПу</CardTitle>
+            <CardDescription>У вас уже есть активная заявка на подключение к ЧОПу</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-medium text-lg mb-2">
+                  Статус вашей заявки:{" "}
+                  {existingRequest.status === "pending"
+                    ? "На рассмотрении"
+                    : existingRequest.status === "approved"
+                      ? "Одобрена"
+                      : "Отклонена"}
+                </h3>
+
+                <div className="space-y-2">
+                  <p>
+                    <strong>Дата подачи:</strong> {new Date(existingRequest.created_at).toLocaleDateString()}
+                  </p>
+
+                  {existingRequest.chop_id ? (
+                    <p>
+                      <strong>ЧОП:</strong> {chops.find((c) => c.id === existingRequest.chop_id)?.name || "Загрузка..."}
+                    </p>
+                  ) : (
+                    <p>
+                      <strong>Новый ЧОП:</strong> {existingRequest.new_chop_name}
+                    </p>
+                  )}
+
+                  {existingRequest.status === "rejected" && existingRequest.rejection_reason && (
+                    <div className="mt-4 bg-red-50 border border-red-200 rounded p-3">
+                      <p>
+                        <strong>Причина отклонения:</strong> {existingRequest.rejection_reason}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {existingRequest.status === "rejected" && (
+                <Button onClick={() => setExistingRequest(null)} className="w-full">
+                  Подать новую заявку
+                </Button>
+              )}
+
+              <Button variant="outline" onClick={() => router.push("/profile")} className="w-full">
+                Вернуться в профиль
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
+    <div className="container max-w-4xl py-10">
+      <Card>
+        <CardHeader className="text-center">
+          <CardTitle>Заявка на подключение к ЧОПу</CardTitle>
+          <CardDescription>Заполните форму для подачи заявки на подключение к охранной организации</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {success ? (
+            <Alert className="mb-4 bg-green-50 border-green-200">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-800">
+                Заявка успешно отправлена! Она будет рассмотрена модератором в ближайшее время. Вы получите уведомление
+                о результате рассмотрения.
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="chopType">Выберите тип организации</Label>
+                  <div className="flex gap-4 mt-2">
+                    <Button
+                      type="button"
+                      variant={!isNewChop ? "default" : "outline"}
+                      onClick={() => setIsNewChop(false)}
+                      className="flex-1"
+                    >
+                      Выбрать из списка
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={isNewChop ? "default" : "outline"}
+                      onClick={() => setIsNewChop(true)}
+                      className="flex-1"
+                    >
+                      Добавить новую
+                    </Button>
+                  </div>
+                </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="h-6 w-6" />
-              Заявка на подключение к ЧОПу
-            </CardTitle>
-            <CardDescription>
-              Для получения доступа к управлению профилем организации необходимо подать заявку на модерацию
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {success ? (
-              <Alert className="bg-green-50 border-green-200">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800">
-                  <strong>Заявка успешно отправлена!</strong>
-                  <br />
-                  Ваша заявка передана на рассмотрение модераторам. Вы получите уведомление о результате рассмотрения на
-                  email. Сейчас вы будете перенаправлены в профиль.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Личные данные */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Личные данные</h3>
+                {!isNewChop ? (
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <Label htmlFor="chopSearch">Поиск организации</Label>
+                      <div className="relative mt-1">
+                        <Input
+                          id="chopSearch"
+                          type="text"
+                          placeholder="Введите название ЧОПа"
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pr-10"
+                        />
+                        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      </div>
+                    </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
+                    <div className="border rounded-md p-3 max-h-60 overflow-y-auto">
+                      {filteredChops.length > 0 ? (
+                        <div className="space-y-2">
+                          {filteredChops.map((chop) => (
+                            <div
+                              key={chop.id}
+                              className={`p-3 rounded-md cursor-pointer ${
+                                selectedChop?.id === chop.id
+                                  ? "bg-blue-50 border border-blue-200"
+                                  : "hover:bg-gray-50 border border-gray-200"
+                              }`}
+                              onClick={() => setSelectedChop(chop)}
+                            >
+                              <div className="font-medium">{chop.name}</div>
+                              {chop.inn && <div className="text-sm text-gray-500">ИНН: {chop.inn}</div>}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-gray-500">
+                          {searchTerm ? "Ничего не найдено" : "Список пуст"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="newChopName">Название организации *</Label>
+                      <Input
+                        id="newChopName"
+                        type="text"
+                        placeholder="ООО ЧОП 'Защита'"
+                        value={newChopName}
+                        onChange={(e) => setNewChopName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="newChopInn">ИНН организации *</Label>
+                      <Input
+                        id="newChopInn"
+                        type="text"
+                        placeholder="1234567890"
+                        value={newChopInn}
+                        onChange={(e) => setNewChopInn(e.target.value)}
+                        required
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        ИНН должен содержать 10 цифр для юридических лиц или 12 цифр для ИП
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-4 border-t">
+                  <h3 className="font-medium mb-4">Информация о представителе</h3>
+                  <div className="space-y-4">
+                    <div>
                       <Label htmlFor="position">Должность *</Label>
                       <Input
                         id="position"
-                        placeholder="HR-менеджер, Директор по персоналу"
+                        type="text"
+                        placeholder="HR-менеджер"
                         value={position}
                         onChange={(e) => setPosition(e.target.value)}
                         required
                       />
                     </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Телефон</Label>
+                    <div>
+                      <Label htmlFor="contactPhone">Контактный телефон *</Label>
                       <Input
-                        id="phone"
+                        id="contactPhone"
                         type="tel"
                         placeholder="+7 (999) 123-45-67"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        value={contactPhone}
+                        onChange={(e) => setContactPhone(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="documents">Подтверждающие документы</Label>
+                      <Input
+                        id="documents"
+                        type="text"
+                        placeholder="Ссылка на документы или описание"
+                        value={documents}
+                        onChange={(e) => setDocuments(e.target.value)}
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Укажите ссылку на документы, подтверждающие ваше право представлять организацию (например,
+                        доверенность, приказ о назначении)
+                      </p>
+                    </div>
+                    <div>
+                      <Label htmlFor="comment">Комментарий</Label>
+                      <Textarea
+                        id="comment"
+                        placeholder="Дополнительная информация"
+                        value={comment}
+                        onChange={(e) => setComment(e.target.value)}
+                        rows={3}
                       />
                     </div>
                   </div>
                 </div>
-
-                {/* Выбор типа заявки */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Организация</h3>
-
-                  <RadioGroup value={requestType} onValueChange={(value: "existing" | "new") => setRequestType(value)}>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="existing" id="existing" />
-                      <Label htmlFor="existing">Моя организация есть в реестре</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="new" id="new" />
-                      <Label htmlFor="new">Моей организации нет в реестре</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-
-                {/* Выбор существующего ЧОПа */}
-                {requestType === "existing" && (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="chopSearch">Поиск организации</Label>
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                        <Input
-                          id="chopSearch"
-                          placeholder="Введите название или ИНН организации"
-                          value={chopSearch}
-                          onChange={(e) => setChopSearch(e.target.value)}
-                          className="pl-10"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="chop">Выберите организацию *</Label>
-                      <Select value={selectedChopId} onValueChange={setSelectedChopId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Найдите вашу организацию" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {filteredChops.length === 0 ? (
-                            <div className="p-2 text-sm text-gray-500">
-                              {chopSearch ? "Организации не найдены" : "Загрузка..."}
-                            </div>
-                          ) : (
-                            filteredChops.map((chop) => (
-                              <SelectItem key={chop.id} value={chop.id}>
-                                <div>
-                                  <div className="font-medium">{chop.name}</div>
-                                  {chop.inn && <div className="text-sm text-gray-500">ИНН: {chop.inn}</div>}
-                                  {chop.address && <div className="text-sm text-gray-500">{chop.address}</div>}
-                                </div>
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {chopSearch && filteredChops.length === 0 && (
-                      <Alert className="bg-blue-50 border-blue-200">
-                        <AlertCircle className="h-4 w-4 text-blue-600" />
-                        <AlertDescription className="text-blue-800">
-                          Не нашли свою организацию? Выберите "Моей организации нет в реестре" и добавьте её.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                  </div>
-                )}
-
-                {/* Данные новой организации */}
-                {requestType === "new" && (
-                  <div className="space-y-4">
-                    <Alert className="bg-blue-50 border-blue-200">
-                      <AlertCircle className="h-4 w-4 text-blue-600" />
-                      <AlertDescription className="text-blue-800">
-                        Новая организация будет добавлена в реестр только после проверки модераторами
-                      </AlertDescription>
-                    </Alert>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="newChopName">Название организации *</Label>
-                        <Input
-                          id="newChopName"
-                          placeholder="ООО 'Название ЧОПа'"
-                          value={newChopName}
-                          onChange={(e) => setNewChopName(e.target.value)}
-                          required={requestType === "new"}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="newChopInn">ИНН *</Label>
-                        <Input
-                          id="newChopInn"
-                          placeholder="1234567890"
-                          value={newChopInn}
-                          onChange={(e) => setNewChopInn(e.target.value.replace(/\D/g, ""))}
-                          maxLength={12}
-                          required={requestType === "new"}
-                        />
-                        <div className="text-xs text-gray-500">10 цифр для юридических лиц, 12 для ИП</div>
-                      </div>
-
-                      <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="newChopAddress">Адрес</Label>
-                        <Input
-                          id="newChopAddress"
-                          placeholder="г. Москва, ул. Примерная, д. 1"
-                          value={newChopAddress}
-                          onChange={(e) => setNewChopAddress(e.target.value)}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="newChopPhone">Телефон</Label>
-                        <Input
-                          id="newChopPhone"
-                          type="tel"
-                          placeholder="+7 (495) 123-45-67"
-                          value={newChopPhone}
-                          onChange={(e) => setNewChopPhone(e.target.value)}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="newChopEmail">Email</Label>
-                        <Input
-                          id="newChopEmail"
-                          type="email"
-                          placeholder="info@chop.ru"
-                          value={newChopEmail}
-                          onChange={(e) => setNewChopEmail(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Комментарий */}
-                <div className="space-y-2">
-                  <Label htmlFor="comment">Дополнительная информация</Label>
-                  <Textarea
-                    id="comment"
-                    placeholder="Укажите дополнительную информацию, которая поможет модераторам рассмотреть вашу заявку..."
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    rows={4}
-                  />
-                </div>
-
-                {/* Информация о документах */}
-                <Alert className="bg-yellow-50 border-yellow-200">
-                  <Upload className="h-4 w-4 text-yellow-600" />
-                  <AlertDescription className="text-yellow-800">
-                    <strong>Документы для подтверждения:</strong>
-                    <br />
-                    После отправки заявки модератор может запросить документы, подтверждающие ваше право представлять
-                    организацию (доверенность, трудовой договор, справка с работы и т.д.)
-                  </AlertDescription>
-                </Alert>
 
                 {error && (
                   <Alert className="bg-red-50 border-red-200">
@@ -421,19 +413,14 @@ export default function ChopConnectionRequestPage() {
                   </Alert>
                 )}
 
-                <div className="flex gap-4">
-                  <Button type="submit" disabled={loading} className="flex-1">
-                    {loading ? "Отправка..." : "Отправить заявку"}
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => router.push("/")}>
-                    Отмена
-                  </Button>
-                </div>
-              </form>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                <Button type="submit" className="w-full" disabled={loading2}>
+                  {loading2 ? "Отправка..." : "Отправить заявку"}
+                </Button>
+              </div>
+            </form>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

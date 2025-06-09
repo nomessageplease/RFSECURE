@@ -68,9 +68,12 @@ export function SignUpForm() {
     setSuccess(true)
     setLoading(false)
 
-    // Для HR ЧОПа перенаправление произойдет автоматически в useAuth
-    // Для обычных пользователей - на страницу входа
-    if (role !== "chop_hr") {
+    // Добавляем прямое перенаправление здесь для HR ЧОПа
+    if (role === "chop_hr") {
+      setTimeout(() => {
+        window.location.href = "/chop-connection-request"
+      }, 3000)
+    } else {
       setTimeout(() => {
         router.push("/auth/sign-in")
       }, 2000)
