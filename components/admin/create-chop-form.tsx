@@ -9,504 +9,426 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Building2, AlertCircle, CheckCircle, Loader2, Search } from "lucide-react"
+import { Loader2, Eye, EyeOff } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import { put } from "@vercel/blob"
-import { getCompanyByInn, validateInn } from "@/lib/dadata/dadata-service"
+import { dadataService } from "@/lib/dadata/dadata-service"
 
-export function CreateChopForm() {
+interface CreateChopFormProps {
+  onSuccess?: () => void
+}
+
+export function CreateChopForm({ onSuccess }: CreateChopFormProps) {
   const [formData, setFormData] = useState({
     inn: "",
-    website: "",
-    // Опциональные поля
     name: "",
+    website: "",
     description: "",
-    location: "",
     address: "",
     phone: "",
     email: "",
-    license: "",
-    specialization: "",
-    employees: "",
-    experience: "",
-    price: "",
-    ogrn: "",
-    status: "",
-    manager: "",
-    registration_date: "",
-    okved: "",
+    license_number: "",
+    employees_count: "",
+    founded_year: "",
   })
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
-  const [logoFile, setLogoFile] = useState<File | null>(null)
+
+  const [logo, setLogo] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
-  const [uploadingLogo, setUploadingLogo] = useState(false)
-  const [showOptionalFields, setShowOptionalFields] = useState(false)
-  const [fetchingData, setFetchingData] = useState(false)
-  const [innError, setInnError] = useState<string | null>(null)
-  const [innExists, setInnExists] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isFetchingData, setIsFetchingData] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const [showAllFields, setShowAllFields] = useState(false)
 
   const supabase = createClient()
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+    setError(null)
+  }
+
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (file) {
-      // Проверка размера файла (максимум 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setMessage({
-          type: "error",
-          text: "Размер файла не должен превышать 5MB",
-        })
-        return
-      }
+    if (!file) return
 
-      // Проверка типа файла
-      if (!file.type.startsWith("image/")) {
-        setMessage({
-          type: "error",
-          text: "Можно загружать только изображения",
-        })
-        return
-      }
-
-      setLogoFile(file)
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setLogoPreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
-      setMessage(null)
+    // Проверка типа файла
+    if (!file.type.startsWith("image/")) {
+      setError("Пожалуйста, выберите файл изображения")
+      return
     }
-  }
 
-  const handleInnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, "").slice(0, 12)
-    setFormData({ ...formData, inn: value })
-    setInnError(null)
-    setInnExists(false)
-  }
-
-  const checkInnExists = async (inn: string) => {
-    try {
-      const { data } = await supabase.from("chops").select("id").eq("inn", inn).single()
-      return !!data
-    } catch (error) {
-      return false
+    // Проверка размера файла (максимум 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Размер файла не должен превышать 5MB")
+      return
     }
+
+    setLogo(file)
+
+    // Создаем превью
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      setLogoPreview(e.target?.result as string)
+    }
+    reader.readAsDataURL(file)
+    setError(null)
   }
 
   const fetchCompanyData = async () => {
-    setFetchingData(true)
-    setMessage(null)
-    setInnError(null)
+    if (!formData.inn) {
+      setError("Введите ИНН для получения данных")
+      return
+    }
+
+    if (!dadataService.validateInn(formData.inn)) {
+      setError("Введите корректный ИНН")
+      return
+    }
+
+    setIsFetchingData(true)
+    setError(null)
 
     try {
-      // Проверка валидности ИНН
-      if (!validateInn(formData.inn)) {
-        setInnError("Некорректный ИНН. Проверьте правильность ввода.")
-        return
+      const companyData = await dadataService.getCompanyByInn(formData.inn)
+
+      if (companyData) {
+        setFormData((prev) => ({
+          ...prev,
+          name: companyData.name.full_with_opf || prev.name,
+          address: companyData.address.unrestricted_value || prev.address,
+          phone: companyData.phones?.[0] || prev.phone,
+          email: companyData.emails?.[0] || prev.email,
+          employees_count: companyData.employee_count?.toString() || prev.employees_count,
+        }))
+        setSuccess("Данные успешно загружены из DaData")
+        setShowAllFields(true)
+      } else {
+        setError("Организация с таким ИНН не найдена")
       }
-
-      // Проверка существования ЧОПа с таким ИНН
-      const exists = await checkInnExists(formData.inn)
-      if (exists) {
-        setInnExists(true)
-        setInnError("ЧОП с таким ИНН уже зарегистрирован в системе.")
-        return
-      }
-
-      // Получение данных из DaData
-      const companyData = await getCompanyByInn(formData.inn)
-
-      if (!companyData) {
-        setInnError("Организация с таким ИНН не найдена в ЕГРЮЛ.")
-        return
-      }
-
-      // Заполнение формы полученными данными
-      setFormData({
-        ...formData,
-        name: companyData.name.full_with_opf || "",
-        address: companyData.address?.value || "",
-        ogrn: companyData.ogrn || "",
-        status: companyData.state?.status || "",
-        manager: companyData.management?.name || "",
-        registration_date: companyData.state?.registration_date || "",
-        okved: companyData.okved || "",
-        employees: companyData.employee_count?.toString() || "",
-        phone: companyData.phones?.length ? companyData.phones[0] : "",
-        email: companyData.emails?.length ? companyData.emails[0] : "",
-      })
-
-      // Показать дополнительные поля, так как они теперь заполнены
-      setShowOptionalFields(true)
-
-      setMessage({
-        type: "success",
-        text: "Данные успешно загружены из ЕГРЮЛ.",
-      })
     } catch (error) {
       console.error("Ошибка при получении данных:", error)
-      setMessage({
-        type: "error",
-        text: "Произошла ошибка при получении данных. Попробуйте позже.",
-      })
+      setError("Ошибка при получении данных из DaData")
     } finally {
-      setFetchingData(false)
+      setIsFetchingData(false)
+    }
+  }
+
+  const uploadLogo = async (file: File): Promise<string | null> => {
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const response = await fetch("/api/upload-logo", {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Ошибка загрузки файла")
+      }
+
+      const data = await response.json()
+      return data.url
+    } catch (error) {
+      console.error("Ошибка загрузки логотипа:", error)
+      throw error
     }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setMessage(null)
+
+    if (!formData.inn) {
+      setError("ИНН обязателен для заполнения")
+      return
+    }
+
+    if (!dadataService.validateInn(formData.inn)) {
+      setError("Введите корректный ИНН")
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+    setSuccess(null)
 
     try {
-      // Проверка валидности ИНН
-      if (!validateInn(formData.inn)) {
-        setInnError("Некорректный ИНН. Проверьте правильность ввода.")
-        setLoading(false)
-        return
+      // Получаем текущего пользователя
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) {
+        throw new Error("Пользователь не авторизован")
       }
 
-      // Проверка существования ЧОПа с таким ИНН
-      const exists = await checkInnExists(formData.inn)
-      if (exists) {
-        setInnExists(true)
-        setInnError("ЧОП с таким ИНН уже зарегистрирован в системе.")
-        setLoading(false)
-        return
-      }
-
-      let logoUrl = ""
-      if (logoFile) {
-        setUploadingLogo(true)
-        try {
-          const blob = await put(`chops/logos/${Date.now()}-${logoFile.name}`, logoFile, {
-            access: "public",
-          })
-          logoUrl = blob.url
-          console.log("Логотип загружен:", logoUrl)
-        } catch (error) {
-          console.error("Ошибка загрузки логотипа:", error)
-          throw new Error("Ошибка при загрузке логотипа")
-        } finally {
-          setUploadingLogo(false)
-        }
+      // Загружаем логотип, если он выбран
+      let logoUrl: string | null = null
+      if (logo) {
+        logoUrl = await uploadLogo(logo)
       }
 
       // Подготавливаем данные для вставки
-      const insertData = {
+      const chopData = {
         inn: formData.inn,
-        website: formData.website,
         name: formData.name || null,
+        website: formData.website || null,
         description: formData.description || null,
         address: formData.address || null,
         phone: formData.phone || null,
         email: formData.email || null,
-        license_number: formData.license || null,
-        logo_url: logoUrl || null,
-        status: "verified",
+        license_number: formData.license_number || null,
+        logo_url: logoUrl,
+        employees_count: formData.employees_count ? Number.parseInt(formData.employees_count) : null,
+        founded_year: formData.founded_year ? Number.parseInt(formData.founded_year) : null,
+        status: "active",
         rating: 0,
         reviews_count: 0,
-        employees_count: formData.employees ? Number.parseInt(formData.employees) : null,
-        founded_year: null,
+        created_by: user.id,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
 
-      console.log("Данные для вставки:", insertData)
+      console.log("Отправляем данные:", chopData)
 
       // Создаем ЧОП в базе данных
-      const { data, error } = await supabase.from("chops").insert(insertData).select().single()
+      const { data, error: insertError } = await supabase.from("chops").insert([chopData]).select()
 
-      if (error) {
-        console.error("Ошибка Supabase:", error)
-        throw new Error(`Ошибка базы данных: ${error.message}`)
+      if (insertError) {
+        console.error("Ошибка при создании ЧОПа:", insertError)
+        throw insertError
       }
 
-      console.log("ЧОП создан:", data)
+      console.log("ЧОП успешно создан:", data)
 
-      setMessage({
-        type: "success",
-        text: `ЧОП "${formData.name || formData.inn}" успешно создан!`,
-      })
+      setSuccess("ЧОП успешно создан!")
 
-      // Очищаем форму
+      // Сбрасываем форму
       setFormData({
         inn: "",
-        website: "",
         name: "",
+        website: "",
         description: "",
-        location: "",
         address: "",
         phone: "",
         email: "",
-        license: "",
-        specialization: "",
-        employees: "",
-        experience: "",
-        price: "",
-        ogrn: "",
-        status: "",
-        manager: "",
-        registration_date: "",
-        okved: "",
+        license_number: "",
+        employees_count: "",
+        founded_year: "",
       })
-      setShowOptionalFields(false)
-      setLogoFile(null)
+      setLogo(null)
       setLogoPreview(null)
+      setShowAllFields(false)
+
+      if (onSuccess) {
+        onSuccess()
+      }
     } catch (error: any) {
-      console.error("Полная ошибка:", error)
-      setMessage({
-        type: "error",
-        text: error.message || "Ошибка при создании ЧОПа",
-      })
+      console.error("Ошибка при создании ЧОПа:", error)
+      setError(error.message || "Произошла ошибка при создании ЧОПа")
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
   return (
-    <Card>
+    <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Building2 className="h-5 w-5" />
-          Создать новый ЧОП
-        </CardTitle>
+        <CardTitle>Создать новый ЧОП</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Обязательные поля */}
-          <div className="space-y-4 p-4 bg-blue-50 rounded-lg">
-            <h3 className="font-medium text-blue-900">Обязательные поля</h3>
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
-            <div>
-              <Label htmlFor="inn">ИНН *</Label>
-              <div className="flex gap-2 mt-1">
+          {success && (
+            <Alert>
+              <AlertDescription className="text-green-600">{success}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Основные поля */}
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Label htmlFor="inn">ИНН *</Label>
                 <Input
                   id="inn"
-                  type="text"
+                  name="inn"
                   value={formData.inn}
-                  onChange={handleInnChange}
+                  onChange={handleInputChange}
+                  placeholder="Введите ИНН организации"
                   required
-                  placeholder="1234567890"
-                  className={innError ? "border-red-500" : ""}
-                  disabled={fetchingData}
                 />
+              </div>
+              <div className="flex items-end">
                 <Button
                   type="button"
                   onClick={fetchCompanyData}
-                  disabled={!formData.inn || formData.inn.length < 10 || fetchingData}
-                  className="whitespace-nowrap"
+                  disabled={isFetchingData || !formData.inn}
+                  variant="outline"
                 >
-                  {fetchingData ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Загрузка...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="mr-2 h-4 w-4" />
-                      Подтянуть данные
-                    </>
-                  )}
+                  {isFetchingData ? <Loader2 className="h-4 w-4 animate-spin" /> : "Подтянуть данные"}
                 </Button>
               </div>
-              {innError && <p className="text-sm text-red-500 mt-1">{innError}</p>}
-              {innExists && (
-                <Alert className="mt-2 border-amber-200 bg-amber-50">
-                  <AlertCircle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-800">
-                    ЧОП уже зарегистрирован — вы можете{" "}
-                    <a href="/chop-connection-request" className="font-medium underline">
-                      подать заявку на присоединение
-                    </a>
-                    .
-                  </AlertDescription>
-                </Alert>
+            </div>
+
+            <div>
+              <Label htmlFor="logo">Логотип</Label>
+              <Input id="logo" type="file" accept="image/*" onChange={handleLogoChange} />
+              {logoPreview && (
+                <div className="mt-2">
+                  <img
+                    src={logoPreview || "/placeholder.svg"}
+                    alt="Превью логотипа"
+                    className="w-20 h-20 object-cover rounded border"
+                  />
+                </div>
               )}
             </div>
 
-            <div>
-              <Label htmlFor="website">Сайт *</Label>
-              <Input
-                id="website"
-                type="url"
-                value={formData.website}
-                onChange={(e) => setFormData({ ...formData, website: e.target.value })}
-                required
-                placeholder="https://example.com"
-                disabled={fetchingData}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="logo">Логотип компании *</Label>
-              <div className="space-y-3">
-                <Input
-                  id="logo"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoChange}
-                  required
-                  className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  disabled={fetchingData}
-                />
-                <p className="text-xs text-gray-500">
-                  Максимальный размер файла: 5MB. Поддерживаемые форматы: JPG, PNG, GIF
-                </p>
-                {logoPreview && (
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <img
-                      src={logoPreview || "/placeholder.svg"}
-                      alt="Предпросмотр логотипа"
-                      className="w-16 h-16 object-cover rounded-lg"
-                    />
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">{logoFile?.name}</p>
-                      <p className="text-xs text-gray-500">
-                        {logoFile ? (logoFile.size / 1024 / 1024).toFixed(2) : 0} MB
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setLogoFile(null)
-                        setLogoPreview(null)
-                      }}
-                      disabled={fetchingData}
-                    >
-                      Удалить
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
+            {!showAllFields && (
+              <Button type="button" variant="outline" onClick={() => setShowAllFields(true)} className="w-full">
+                <Eye className="h-4 w-4 mr-2" />
+                Показать все поля
+              </Button>
+            )}
           </div>
 
-          {/* Кнопка для показа дополнительных полей */}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setShowOptionalFields(!showOptionalFields)}
-            className="w-full"
-            disabled={fetchingData}
-          >
-            {showOptionalFields ? "Скрыть дополнительные поля" : "+ Добавить дополнительные поля"}
-          </Button>
+          {/* Дополнительные поля */}
+          {showAllFields && (
+            <div className="space-y-4 border-t pt-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">Дополнительная информация</h3>
+                <Button type="button" variant="ghost" size="sm" onClick={() => setShowAllFields(false)}>
+                  <EyeOff className="h-4 w-4 mr-2" />
+                  Скрыть
+                </Button>
+              </div>
 
-          {/* Опциональные поля */}
-          {showOptionalFields && (
-            <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-              <h3 className="font-medium text-gray-900">Дополнительные поля</h3>
+              <div>
+                <Label htmlFor="name">Название</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="Полное название организации"
+                />
+              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Название ЧОПа</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Охранное Агентство Пример"
-                    disabled={fetchingData}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="license">Номер лицензии</Label>
-                  <Input
-                    id="license"
-                    type="text"
-                    value={formData.license}
-                    onChange={(e) => setFormData({ ...formData, license: e.target.value })}
-                    placeholder="ЧО-123456"
-                    disabled={fetchingData}
-                  />
-                </div>
+              <div>
+                <Label htmlFor="website">Веб-сайт</Label>
+                <Input
+                  id="website"
+                  name="website"
+                  type="url"
+                  value={formData.website}
+                  onChange={handleInputChange}
+                  placeholder="https://example.com"
+                />
               </div>
 
               <div>
                 <Label htmlFor="description">Описание</Label>
                 <Textarea
                   id="description"
+                  name="description"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Краткое описание деятельности компании"
+                  onChange={handleInputChange}
+                  placeholder="Краткое описание деятельности"
                   rows={3}
-                  disabled={fetchingData}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="address">Адрес</Label>
+                <Input
+                  id="address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  placeholder="Юридический адрес"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="address">Адрес</Label>
-                  <Input
-                    id="address"
-                    type="text"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    placeholder="ул. Примерная, д. 1"
-                    disabled={fetchingData}
-                  />
-                </div>
-                <div>
                   <Label htmlFor="phone">Телефон</Label>
                   <Input
                     id="phone"
-                    type="tel"
+                    name="phone"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+7 (495) 123-45-67"
-                    disabled={fetchingData}
+                    onChange={handleInputChange}
+                    placeholder="+7 (xxx) xxx-xx-xx"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="info@example.com"
                   />
                 </div>
               </div>
 
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="license_number">Номер лицензии</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="info@example.com"
-                  disabled={fetchingData}
+                  id="license_number"
+                  name="license_number"
+                  value={formData.license_number}
+                  onChange={handleInputChange}
+                  placeholder="Номер лицензии на охранную деятельность"
                 />
               </div>
 
-              <div>
-                <Label htmlFor="employees">Количество сотрудников</Label>
-                <Input
-                  id="employees"
-                  type="number"
-                  value={formData.employees}
-                  onChange={(e) => setFormData({ ...formData, employees: e.target.value })}
-                  placeholder="100"
-                  min="1"
-                  disabled={fetchingData}
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="employees_count">Количество сотрудников</Label>
+                  <Input
+                    id="employees_count"
+                    name="employees_count"
+                    type="number"
+                    value={formData.employees_count}
+                    onChange={handleInputChange}
+                    placeholder="100"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="founded_year">Год основания</Label>
+                  <Input
+                    id="founded_year"
+                    name="founded_year"
+                    type="number"
+                    value={formData.founded_year}
+                    onChange={handleInputChange}
+                    placeholder="2020"
+                    min="1900"
+                    max={new Date().getFullYear()}
+                  />
+                </div>
               </div>
             </div>
           )}
 
-          {message && (
-            <Alert className={message.type === "error" ? "border-red-200 bg-red-50" : "border-green-200 bg-green-50"}>
-              {message.type === "error" ? (
-                <AlertCircle className="h-4 w-4 text-red-600" />
-              ) : (
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              )}
-              <AlertDescription className={message.type === "error" ? "text-red-800" : "text-green-800"}>
-                {message.text}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          <Button type="submit" disabled={loading || uploadingLogo || fetchingData || innExists} className="w-full">
-            {uploadingLogo ? "Загрузка логотипа..." : loading ? "Создание..." : "Создать ЧОП"}
+          <Button type="submit" disabled={isLoading} className="w-full">
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Создание...
+              </>
+            ) : (
+              "Создать ЧОП"
+            )}
           </Button>
         </form>
       </CardContent>

@@ -153,3 +153,11 @@ function calculateCheckDigit12(inn: string): number {
 
   return (sum % 11) % 10
 }
+
+/**
+ * Объект сервиса DaData с методами для работы с API
+ */
+export const dadataService = {
+  getCompanyByInn,
+  validateInn,
+}

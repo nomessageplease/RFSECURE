@@ -8,156 +8,194 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { UserPlus, AlertCircle, CheckCircle } from "lucide-react"
+import { Loader2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
-export function CreateModeratorForm() {
+interface CreateModeratorFormProps {
+  onSuccess?: () => void
+}
+
+export function CreateModeratorForm({ onSuccess }: CreateModeratorFormProps) {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    fullName: "",
-    phone: "",
+    confirmPassword: "",
   })
-  const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
 
   const supabase = createClient()
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({ ...prev, [name]: value }))
+    setError(null)
+  }
+
+  const validateForm = () => {
+    if (!formData.email) {
+      setError("Email обязателен для заполнения")
+      return false
+    }
+
+    if (!formData.password) {
+      setError("Пароль обязателен для заполнения")
+      return false
+    }
+
+    if (formData.password.length < 6) {
+      setError("Пароль должен содержать минимум 6 символов")
+      return false
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Пароли не совпадают")
+      return false
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      setError("Введите корректный email адрес")
+      return false
+    }
+
+    return true
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setMessage(null)
+
+    if (!validateForm()) {
+      return
+    }
+
+    setIsLoading(true)
+    setError(null)
+    setSuccess(null)
 
     try {
-      // Создаем пользователя через Supabase Auth
+      // Создаем пользователя
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
-        options: {
-          data: {
-            full_name: formData.fullName,
-            role: "moderator",
-          },
-        },
       })
 
       if (authError) {
         throw authError
       }
 
-      if (authData.user) {
-        // Создаем профиль модератора
-        const { error: profileError } = await supabase.from("profiles").insert({
-          id: authData.user.id,
-          email: formData.email,
-          full_name: formData.fullName,
-          phone: formData.phone,
-          role: "moderator",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
+      if (!authData.user) {
+        throw new Error("Не удалось создать пользователя")
+      }
 
-        if (profileError) {
-          throw profileError
-        }
+      // Обновляем роль пользователя на модератора
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ role: "moderator" })
+        .eq("id", authData.user.id)
 
-        setMessage({
-          type: "success",
-          text: `Модератор ${formData.fullName} успешно создан!`,
-        })
+      if (updateError) {
+        console.error("Ошибка при обновлении роли:", updateError)
+        // Не прерываем процесс, так как пользователь уже создан
+      }
 
-        // Очищаем форму
-        setFormData({
-          email: "",
-          password: "",
-          fullName: "",
-          phone: "",
-        })
+      setSuccess("Модератор успешно создан!")
+
+      // Сбрасываем форму
+      setFormData({
+        email: "",
+        password: "",
+        confirmPassword: "",
+      })
+
+      if (onSuccess) {
+        onSuccess()
       }
     } catch (error: any) {
-      setMessage({
-        type: "error",
-        text: error.message || "Ошибка при создании модератора",
-      })
+      console.error("Ошибка при создании модератора:", error)
+      setError(error.message || "Произошла ошибка при создании модератора")
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
   return (
-    <Card>
+    <Card className="w-full max-w-md mx-auto">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <UserPlus className="h-5 w-5" />
-          Создать аккаунт модератора
-        </CardTitle>
+        <CardTitle>Создать модератора</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="fullName">Полное имя</Label>
-              <Input
-                id="fullName"
-                type="text"
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                required
-                placeholder="Иван Иванов"
-              />
-            </div>
-            <div>
-              <Label htmlFor="phone">Телефон</Label>
-              <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                placeholder="+7 (999) 123-45-67"
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              required
-              placeholder="moderator@example.com"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="password">Пароль</Label>
-            <Input
-              id="password"
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              required
-              placeholder="Минимум 6 символов"
-              minLength={6}
-            />
-          </div>
-
-          {message && (
-            <Alert className={message.type === "error" ? "border-red-200 bg-red-50" : "border-green-200 bg-green-50"}>
-              {message.type === "error" ? (
-                <AlertCircle className="h-4 w-4 text-red-600" />
-              ) : (
-                <CheckCircle className="h-4 w-4 text-green-600" />
-              )}
-              <AlertDescription className={message.type === "error" ? "text-red-800" : "text-green-800"}>
-                {message.text}
-              </AlertDescription>
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
 
-          <Button type="submit" disabled={loading} className="w-full">
-            {loading ? "Создание..." : "Создать модератора"}
+          {success && (
+            <Alert>
+              <AlertDescription className="text-green-600">{success}</AlertDescription>
+            </Alert>
+          )}
+
+          <div>
+            <Label htmlFor="email">Email *</Label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              placeholder="moderator@example.com"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="password">Пароль *</Label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleInputChange}
+              placeholder="Минимум 6 символов"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="confirmPassword">Подтвердите пароль *</Label>
+            <Input
+              id="confirmPassword"
+              name="confirmPassword"
+              type="password"
+              value={formData.confirmPassword}
+              onChange={handleInputChange}
+              placeholder="Повторите пароль"
+              required
+              className={
+                formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword
+                  ? "border-red-500"
+                  : ""
+              }
+            />
+            {formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword && (
+              <p className="text-sm text-red-500 mt-1">Пароли не совпадают</p>
+            )}
+          </div>
+
+          <Button type="submit" disabled={isLoading} className="w-full">
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Создание...
+              </>
+            ) : (
+              "Создать модератора"
+            )}
           </Button>
         </form>
       </CardContent>
