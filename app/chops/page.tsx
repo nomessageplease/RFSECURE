@@ -245,14 +245,14 @@ export default function CatalogPage() {
           {sortedCompanies.map((company) => (
             <Card
               key={company.id}
-              className={`group hover:shadow-lg transition-all duration-200 border-0 shadow-sm bg-white cursor-pointer ${
+              className={`group hover:shadow-lg transition-all duration-200 border-0 shadow-sm bg-white cursor-pointer h-[480px] flex flex-col ${
                 viewMode === "list" ? "w-full" : ""
               }`}
             >
-              <CardContent className={viewMode === "grid" ? "p-6" : "p-0"}>
+              <CardContent className={viewMode === "grid" ? "p-6 flex flex-col flex-1" : "p-0"}>
                 {viewMode === "grid" ? (
                   // Grid View
-                  <div className="space-y-4">
+                  <div className="space-y-4 flex flex-col flex-1">
                     {/* Header */}
                     <div className="flex items-start gap-4">
                       <Avatar className="h-16 w-16 border-2 border-gray-200">
@@ -266,7 +266,7 @@ export default function CatalogPage() {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-2">
-                          <h3 className="font-semibold text-lg text-gray-900 group-hover:text-gray-700 transition-colors leading-tight">
+                          <h3 className="font-semibold text-lg text-gray-900 group-hover:text-gray-700 transition-colors leading-tight h-14 flex items-center">
                             {company.name}
                           </h3>
                           {company.verified && (
@@ -298,10 +298,10 @@ export default function CatalogPage() {
                     </div>
 
                     {/* Description */}
-                    <p className="text-gray-600 text-sm leading-relaxed">{company.description}</p>
+                    <p className="text-gray-600 text-sm leading-relaxed h-10 overflow-hidden">{company.description}</p>
 
                     {/* Specialization */}
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 h-8 overflow-hidden">
                       {company.specialization.slice(0, 3).map((spec, index) => (
                         <Badge key={index} variant="outline" className="text-xs">
                           {spec}
@@ -348,7 +348,7 @@ export default function CatalogPage() {
                     )}
 
                     {/* Price & CTA */}
-                    <div className="flex items-center justify-between pt-4 border-t">
+                    <div className="flex items-center justify-between pt-4 border-t mt-auto">
                       <div>
                         <div className="text-lg font-semibold text-gray-900">{company.price}</div>
                         <div className="text-xs text-gray-500">за охрану объекта</div>

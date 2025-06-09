@@ -15,7 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { createClient } from "@/lib/supabase/client"
 import type { Chop } from "@/lib/supabase/types"
-import { AlertCircle, Building2, Upload, CheckCircle } from "lucide-react"
+import { AlertCircle, Building2, Upload, CheckCircle, Search } from "lucide-react"
 import Header from "@/components/header"
 
 export default function ChopConnectionRequestPage() {
@@ -24,6 +24,7 @@ export default function ChopConnectionRequestPage() {
   const supabase = createClient()
 
   const [chops, setChops] = useState<Chop[]>([])
+  const [filteredChops, setFilteredChops] = useState<Chop[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -31,6 +32,7 @@ export default function ChopConnectionRequestPage() {
   // Форма
   const [requestType, setRequestType] = useState<"existing" | "new">("existing")
   const [selectedChopId, setSelectedChopId] = useState("")
+  const [chopSearch, setChopSearch] = useState("")
   const [position, setPosition] = useState("")
   const [phone, setPhone] = useState("")
   const [comment, setComment] = useState("")
@@ -51,11 +53,25 @@ export default function ChopConnectionRequestPage() {
         console.error("Ошибка загрузки ЧОПов:", error)
       } else {
         setChops(data || [])
+        setFilteredChops(data || [])
       }
     }
 
     loadChops()
   }, [supabase])
+
+  // Фильтрация ЧОПов по поиску
+  useEffect(() => {
+    if (!chopSearch.trim()) {
+      setFilteredChops(chops)
+    } else {
+      const filtered = chops.filter(
+        (chop) =>
+          chop.name.toLowerCase().includes(chopSearch.toLowerCase()) || (chop.inn && chop.inn.includes(chopSearch)),
+      )
+      setFilteredChops(filtered)
+    }
+  }, [chopSearch, chops])
 
   // Проверка доступа
   useEffect(() => {
@@ -94,13 +110,39 @@ export default function ChopConnectionRequestPage() {
       return
     }
 
-    if (requestType === "new" && (!newChopName.trim() || !newChopInn.trim())) {
-      setError("Заполните обязательные поля для новой организации")
-      setLoading(false)
-      return
+    if (requestType === "new") {
+      if (!newChopName.trim()) {
+        setError("Укажите название организации")
+        setLoading(false)
+        return
+      }
+      if (!newChopInn.trim()) {
+        setError("Укажите ИНН организации")
+        setLoading(false)
+        return
+      }
+      if (newChopInn.length !== 10 && newChopInn.length !== 12) {
+        setError("ИНН должен содержать 10 или 12 цифр")
+        setLoading(false)
+        return
+      }
     }
 
     try {
+      // Проверяем, нет ли уже активной заявки от этого пользователя
+      const { data: existingRequest } = await supabase
+        .from("chop_connection_requests")
+        .select("id, status")
+        .eq("user_id", user.id)
+        .eq("status", "pending")
+        .single()
+
+      if (existingRequest) {
+        setError("У вас уже есть активная заявка на рассмотрении")
+        setLoading(false)
+        return
+      }
+
       const requestData = {
         user_id: user.id,
         applicant_position: position.trim(),
@@ -227,23 +269,55 @@ export default function ChopConnectionRequestPage() {
 
                 {/* Выбор существующего ЧОПа */}
                 {requestType === "existing" && (
-                  <div className="space-y-2">
-                    <Label htmlFor="chop">Выберите организацию *</Label>
-                    <Select value={selectedChopId} onValueChange={setSelectedChopId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Найдите вашу организацию" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {chops.map((chop) => (
-                          <SelectItem key={chop.id} value={chop.id}>
-                            <div>
-                              <div className="font-medium">{chop.name}</div>
-                              {chop.inn && <div className="text-sm text-gray-500">ИНН: {chop.inn}</div>}
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="chopSearch">Поиск организации</Label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                        <Input
+                          id="chopSearch"
+                          placeholder="Введите название или ИНН организации"
+                          value={chopSearch}
+                          onChange={(e) => setChopSearch(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="chop">Выберите организацию *</Label>
+                      <Select value={selectedChopId} onValueChange={setSelectedChopId}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Найдите вашу организацию" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {filteredChops.length === 0 ? (
+                            <div className="p-2 text-sm text-gray-500">
+                              {chopSearch ? "Организации не найдены" : "Загрузка..."}
                             </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                          ) : (
+                            filteredChops.map((chop) => (
+                              <SelectItem key={chop.id} value={chop.id}>
+                                <div>
+                                  <div className="font-medium">{chop.name}</div>
+                                  {chop.inn && <div className="text-sm text-gray-500">ИНН: {chop.inn}</div>}
+                                  {chop.address && <div className="text-sm text-gray-500">{chop.address}</div>}
+                                </div>
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {chopSearch && filteredChops.length === 0 && (
+                      <Alert className="bg-blue-50 border-blue-200">
+                        <AlertCircle className="h-4 w-4 text-blue-600" />
+                        <AlertDescription className="text-blue-800">
+                          Не нашли свою организацию? Выберите "Моей организации нет в реестре" и добавьте её.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
                 )}
 
@@ -275,9 +349,11 @@ export default function ChopConnectionRequestPage() {
                           id="newChopInn"
                           placeholder="1234567890"
                           value={newChopInn}
-                          onChange={(e) => setNewChopInn(e.target.value)}
+                          onChange={(e) => setNewChopInn(e.target.value.replace(/\D/g, ""))}
+                          maxLength={12}
                           required={requestType === "new"}
                         />
+                        <div className="text-xs text-gray-500">10 цифр для юридических лиц, 12 для ИП</div>
                       </div>
 
                       <div className="space-y-2 md:col-span-2">

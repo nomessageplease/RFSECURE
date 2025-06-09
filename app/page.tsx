@@ -38,25 +38,6 @@ import Header from "@/components/header"
 
 const modules = [
   {
-    id: "catalog",
-    title: "Каталог ЧОПов",
-    description: "Полный реестр с верификацией, сравнением и геолокацией",
-    icon: Building2,
-    href: "/catalog",
-    color: "bg-blue-100 text-blue-700",
-    stats: "1,247 компаний",
-    featured: true,
-    submodules: [
-      "Реестр организаций",
-      "Карточки ЧОПов",
-      "Расширенные фильтры",
-      "Верификация данных",
-      "Управление владельцем",
-      "Сравнение ЧОПов",
-      "Геолокация и карта",
-    ],
-  },
-  {
     id: "ratings",
     title: "Система рейтинга",
     description: "Алгоритмический расчет рейтинга по 5 параметрам с визуализацией",
@@ -263,8 +244,8 @@ const recentActivity = [
 ]
 
 const quickActions = [
-  { title: "Найти ЧОП", href: "/catalog", icon: Search },
-  { title: "Сравнить ЧОПы", href: "/catalog/compare", icon: BarChart3 },
+  { title: "Найти ЧОП", href: "/chops", icon: Search },
+  { title: "Сравнить ЧОПы", href: "/chops/compare", icon: BarChart3 },
   { title: "Разместить вакансию", href: "/jobs/create", icon: Briefcase },
   { title: "Оставить отзыв", href: "/reviews/create", icon: MessageSquare },
   { title: "Подать жалобу", href: "/complaints/create", icon: AlertTriangle },
@@ -315,7 +296,7 @@ export default function HomePage() {
                 Найти работу
               </Button>
             </Link>
-            <Link href="/catalog">
+            <Link href="/chops">
               <Button variant="outline" size="lg">
                 <Building2 className="h-5 w-5 mr-2" />
                 Изучить ЧОПы
@@ -880,7 +861,7 @@ export default function HomePage() {
               <h4 className="font-semibold mb-4 text-white">Основные модули</h4>
               <ul className="space-y-3 text-gray-400 text-sm">
                 <li>
-                  <Link href="/catalog" className="hover:text-white transition-colors">
+                  <Link href="/chops" className="hover:text-white transition-colors">
                     Каталог ЧОПов
                   </Link>
                 </li>
