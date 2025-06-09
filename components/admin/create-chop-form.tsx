@@ -37,38 +37,59 @@ export function CreateChopForm() {
   const supabase = createClient()
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setMessage({
-          type: "error",
-          text: "Размер файла не должен превышать 5MB",
-        })
-        return
-      }
+    try {
+      const file = e.target.files?.[0]
+      if (file) {
+        console.log("Выбран файл:", file.name, file.size, file.type)
 
-      if (!file.type.startsWith("image/")) {
-        setMessage({
-          type: "error",
-          text: "Можно загружать только изображения",
-        })
-        return
-      }
+        if (file.size > 5 * 1024 * 1024) {
+          setMessage({
+            type: "error",
+            text: "Размер файла не должен превышать 5MB",
+          })
+          return
+        }
 
-      setLogoFile(file)
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setLogoPreview(e.target?.result as string)
+        if (!file.type.startsWith("image/")) {
+          setMessage({
+            type: "error",
+            text: "Можно загружать только изображения",
+          })
+          return
+        }
+
+        setLogoFile(file)
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          setLogoPreview(e.target?.result as string)
+        }
+        reader.onerror = (error) => {
+          console.error("Ошибка чтения файла:", error)
+          setMessage({
+            type: "error",
+            text: "Ошибка при чтении файла",
+          })
+        }
+        reader.readAsDataURL(file)
+        setMessage(null)
       }
-      reader.readAsDataURL(file)
-      setMessage(null)
+    } catch (error) {
+      console.error("Ошибка в handleLogoChange:", error)
+      setMessage({
+        type: "error",
+        text: "Ошибка при обработке файла",
+      })
     }
   }
 
   const handleInnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, "").slice(0, 12)
-    setFormData({ ...formData, inn: value })
-    setInnError(null)
+    try {
+      const value = e.target.value.replace(/\D/g, "").slice(0, 12)
+      setFormData({ ...formData, inn: value })
+      setInnError(null)
+    } catch (error) {
+      console.error("Ошибка в handleInnChange:", error)
+    }
   }
 
   const checkInnExists = async (inn: string) => {
@@ -97,17 +118,24 @@ export function CreateChopForm() {
       const formData = new FormData()
       formData.append("file", file)
 
+      console.log("Отправляем запрос на /api/upload-logo")
       const response = await fetch("/api/upload-logo", {
         method: "POST",
         body: formData,
       })
 
-      console.log("Ответ от API загрузки:", response.status, response.statusText)
+      console.log("Получен ответ:", response.status, response.statusText)
 
       if (!response.ok) {
-        const errorText = await response.text()
+        let errorText = "Неизвестная ошибка"
+        try {
+          const errorData = await response.json()
+          errorText = errorData.error || errorText
+        } catch {
+          errorText = await response.text()
+        }
         console.error("Ошибка загрузки логотипа:", errorText)
-        throw new Error(`Ошибка загрузки файла: ${response.status}`)
+        throw new Error(`Ошибка загрузки файла: ${errorText}`)
       }
 
       const data = await response.json()
@@ -125,6 +153,8 @@ export function CreateChopForm() {
     setInnError(null)
 
     try {
+      console.log("Начинаем проверку ИНН:", formData.inn)
+
       if (formData.inn.length !== 10 && formData.inn.length !== 12) {
         setInnError("ИНН должен содержать 10 или 12 цифр")
         return
@@ -145,7 +175,7 @@ export function CreateChopForm() {
       console.error("Ошибка при проверке ИНН:", error)
       setMessage({
         type: "error",
-        text: "Произошла ошибка при проверке ИНН. Попробуйте позже.",
+        text: `Произошла ошибка при проверке ИНН: ${error instanceof Error ? error.message : "Неизвестная ошибка"}`,
       })
     } finally {
       setFetchingData(false)
@@ -160,15 +190,17 @@ export function CreateChopForm() {
 
     try {
       console.log("=== НАЧАЛО СОЗДАНИЯ ЧОПа ===")
+      console.log("Данные формы:", formData)
 
       // Проверка ИНН
-      if (formData.inn.length !== 10 && formData.inn.length !== 12) {
+      if (!formData.inn || (formData.inn.length !== 10 && formData.inn.length !== 12)) {
         setInnError("ИНН должен содержать 10 или 12 цифр")
         setLoading(false)
         return
       }
 
       // Проверка существования ЧОПа с таким ИНН
+      console.log("Проверяем существование ЧОПа...")
       const exists = await checkInnExists(formData.inn)
       if (exists) {
         setInnError("ЧОП с таким ИНН уже зарегистрирован в системе.")
@@ -183,22 +215,30 @@ export function CreateChopForm() {
         error: userError,
       } = await supabase.auth.getUser()
 
-      console.log("Пользователь:", user, "Ошибка:", userError)
+      console.log("Результат получения пользователя:", { user: user?.id, error: userError })
 
-      if (userError || !user) {
+      if (userError) {
+        console.error("Ошибка получения пользователя:", userError)
+        throw new Error(`Ошибка аутентификации: ${userError.message}`)
+      }
+
+      if (!user) {
         throw new Error("Пользователь не авторизован")
       }
 
       // Загружаем логотип, если он выбран
       let logoUrl = ""
       if (logoFile) {
+        console.log("Загружаем логотип...")
         setUploadingLogo(true)
         try {
           logoUrl = await uploadLogo(logoFile)
           console.log("Логотип загружен:", logoUrl)
         } catch (error) {
           console.error("Ошибка загрузки логотипа:", error)
-          throw new Error("Ошибка при загрузке логотипа")
+          throw new Error(
+            `Ошибка при загрузке логотипа: ${error instanceof Error ? error.message : "Неизвестная ошибка"}`,
+          )
         } finally {
           setUploadingLogo(false)
         }
@@ -237,7 +277,7 @@ export function CreateChopForm() {
           insertData: insertData,
           user: user,
         })
-        throw new Error(`Ошибка базы данных: ${error.message}`)
+        throw new Error(`Ошибка базы данных: ${error.message} (код: ${error.code})`)
       }
 
       if (!data || data.length === 0) {
@@ -248,6 +288,7 @@ export function CreateChopForm() {
       console.log("ЧОП создан успешно:", data[0])
 
       // Проверяем, что ЧОП действительно создался
+      console.log("Проверяем созданный ЧОП...")
       const { data: verifyData, error: verifyError } = await supabase
         .from("chops")
         .select("*")
@@ -285,14 +326,19 @@ export function CreateChopForm() {
 
       console.log("=== КОНЕЦ СОЗДАНИЯ ЧОПа ===")
     } catch (error: any) {
-      console.error("Полная ошибка:", error)
+      console.error("Полная ошибка создания ЧОПа:", error)
+      console.error("Stack trace:", error.stack)
+
       setMessage({
         type: "error",
-        text: error.message || "Ошибка при создании ЧОПа",
+        text: error.message || "Произошла неожиданная ошибка при создании ЧОПа",
       })
+
       setDebugInfo({
         error: error.message,
         stack: error.stack,
+        name: error.name,
+        cause: error.cause,
       })
     } finally {
       setLoading(false)
@@ -528,8 +574,12 @@ export function CreateChopForm() {
             <Alert className="border-blue-200 bg-blue-50">
               <AlertDescription className="text-blue-800">
                 <details>
-                  <summary className="cursor-pointer font-medium">Отладочная информация</summary>
-                  <pre className="mt-2 text-xs overflow-auto">{JSON.stringify(debugInfo, null, 2)}</pre>
+                  <summary className="cursor-pointer font-medium">
+                    Отладочная информация (нажмите для просмотра)
+                  </summary>
+                  <pre className="mt-2 text-xs overflow-auto max-h-64 bg-white p-2 rounded border">
+                    {JSON.stringify(debugInfo, null, 2)}
+                  </pre>
                 </details>
               </AlertDescription>
             </Alert>
