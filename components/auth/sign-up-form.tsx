@@ -51,6 +51,8 @@ export function SignUpForm() {
       return
     }
 
+    console.log("Отправка формы регистрации:", { email, fullName, role })
+
     const { data, error } = await signUp(email, password, fullName, role)
 
     if (error) {
@@ -62,16 +64,13 @@ export function SignUpForm() {
       return
     }
 
+    console.log("Регистрация успешна:", data)
     setSuccess(true)
     setLoading(false)
 
-    // Если выбрана роль HR ЧОПа, перенаправляем на форму заявки
-    if (role === "chop_hr") {
-      setTimeout(() => {
-        router.push("/chop-connection-request")
-      }, 2000)
-    } else {
-      // Для обычных пользователей - на страницу входа
+    // Для HR ЧОПа перенаправление произойдет автоматически в useAuth
+    // Для обычных пользователей - на страницу входа
+    if (role !== "chop_hr") {
       setTimeout(() => {
         router.push("/auth/sign-in")
       }, 2000)

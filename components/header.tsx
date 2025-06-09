@@ -91,26 +91,22 @@ const Header: React.FC = () => {
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
-            {!mounted ? (
+            {!mounted || loading ? (
               // Показываем skeleton до полной загрузки
               <div className="flex items-center gap-3">
                 <div className="h-8 w-16 bg-gray-200 animate-pulse rounded"></div>
                 <div className="h-8 w-20 bg-gray-200 animate-pulse rounded"></div>
               </div>
-            ) : loading ? (
-              // Показываем skeleton во время загрузки auth
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-16 bg-gray-200 animate-pulse rounded"></div>
-                <div className="h-8 w-20 bg-gray-200 animate-pulse rounded"></div>
-              </div>
-            ) : user && profile ? (
-              // Авторизованный пользователь
+            ) : user ? (
+              // Пользователь авторизован (независимо от наличия профиля)
               <>
-                <div className="hidden md:flex items-center gap-2 text-sm text-gray-600">
-                  <span>{getRoleDisplayName(profile.role)}</span>
-                  <span>•</span>
-                  <span>{profile.full_name}</span>
-                </div>
+                {profile && (
+                  <div className="hidden md:flex items-center gap-2 text-sm text-gray-600">
+                    <span>{getRoleDisplayName(profile.role)}</span>
+                    <span>•</span>
+                    <span>{profile.full_name}</span>
+                  </div>
+                )}
                 <Link href="/profile" className="text-gray-700 hover:text-gray-900 transition-colors text-sm">
                   Личный кабинет
                 </Link>
@@ -180,11 +176,13 @@ const Header: React.FC = () => {
               <Link href="/ratings" className="text-gray-700 hover:text-gray-900 transition-colors">
                 Рейтинги
               </Link>
-              {user && profile && (
+              {user && (
                 <div className="pt-2 border-t">
-                  <div className="text-sm text-gray-600 mb-2">
-                    {getRoleDisplayName(profile.role)} • {profile.full_name}
-                  </div>
+                  {profile && (
+                    <div className="text-sm text-gray-600 mb-2">
+                      {getRoleDisplayName(profile.role)} • {profile.full_name}
+                    </div>
+                  )}
                   <Link href="/profile" className="text-gray-700 hover:text-gray-900 transition-colors block mb-2">
                     Личный кабинет
                   </Link>

@@ -83,8 +83,17 @@ export function useAuth() {
           } else if (profile) {
             console.log("Профиль получен после смены состояния:", profile.role)
             setProfile(profile)
-            // Обновляем страницу для применения изменений
-            router.refresh()
+
+            // Если это новый пользователь с ролью chop_hr, перенаправляем на форму заявки
+            if (event === "SIGNED_UP" && profile.role === "chop_hr") {
+              console.log("Перенаправление HR ЧОПа на форму заявки")
+              setTimeout(() => {
+                router.push("/chop-connection-request")
+              }, 1000)
+            } else {
+              // Обновляем страницу для применения изменений
+              router.refresh()
+            }
           } else if (attempts < maxAttempts) {
             // Профиль еще не создался, ждем
             attempts++
