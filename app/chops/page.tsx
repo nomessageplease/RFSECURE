@@ -84,14 +84,23 @@ export default function CatalogPage() {
         }
 
         // Преобразуем данные для отображения
-        const formattedChops: Chop[] = data.map((chop) => ({
-          ...chop,
-          // Добавляем недостающие поля для совместимости с ChopCard
-          specialization: ["Объекты"], // Заглушка
-          location: "Москва", // Заглушка
-          experience: 5, // Заглушка
-          verified: true, // Заглушка
-          price: "от 20 000 ₽/мес", // Заглушка
+        const formattedChops: any[] = data.map((chop) => ({
+          id: chop.id,
+          name: chop.name || `ЧОП ${chop.inn}`,
+          rating: chop.rating || 0,
+          reviewCount: chop.reviews_count || 0,
+          location: chop.address || "Москва",
+          verified: chop.status === "verified" || chop.status === "active",
+          logo: chop.logo_url, // Правильное маппинг логотипа
+          specialization: ["Объекты", "Охрана"],
+          employees: chop.employees_count || 0,
+          experience: 5,
+          phone: chop.phone || "+7 (***) ***-**-**",
+          email: chop.email || "info@example.com",
+          description: chop.description || "Охранная компания",
+          price: "от 20 000 ₽/мес",
+          // Добавляем все оригинальные поля для отладки
+          originalData: chop,
         }))
 
         console.log(`Загружено ${formattedChops.length} ЧОПов`)
