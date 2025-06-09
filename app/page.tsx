@@ -7,7 +7,6 @@ import {
   Star,
   Users,
   TrendingUp,
-  MapPin,
   Clock,
   Newspaper,
   Briefcase,
@@ -19,7 +18,6 @@ import {
   AlertTriangle,
   UserCheck,
   Building2,
-  Award,
   Phone,
   Mail,
   ArrowRight,
@@ -31,10 +29,10 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import Header from "@/components/header"
+import { ChopCard } from "@/components/chop-card"
 
 const modules = [
   {
@@ -174,6 +172,10 @@ const featuredChops = [
     experience: 15,
     activeJobs: 12,
     recentReview: "Отличная работа, рекомендую!",
+    phone: "+7 (495) 123-45-67",
+    email: "info@avangard-security.ru",
+    description: "Ведущая охранная компания Москвы с 15-летним опытом работы.",
+    price: "от 25 000 ₽/мес",
   },
   {
     id: 2,
@@ -188,6 +190,10 @@ const featuredChops = [
     experience: 10,
     activeJobs: 8,
     recentReview: "Профессиональный подход",
+    phone: "+7 (495) 234-56-78",
+    email: "info@shield-security.ru",
+    description: "Профессиональная охрана мероприятий и VIP-персон.",
+    price: "от 30 000 ₽/мес",
   },
   {
     id: 3,
@@ -202,6 +208,10 @@ const featuredChops = [
     experience: 8,
     activeJobs: 5,
     recentReview: "Надежная компания",
+    phone: "+7 (812) 345-67-89",
+    email: "info@bars-security.ru",
+    description: "Специализируемся на охране торговых центров и складов.",
+    price: "от 20 000 ₽/мес",
   },
 ]
 
@@ -637,92 +647,7 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {featuredChops.map((chop, index) => (
-              <Card
-                key={chop.id}
-                className="group hover:shadow-2xl transition-all duration-300 border-0 shadow-lg bg-white overflow-hidden"
-              >
-                <div className="relative">
-                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-6 text-white">
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-lg overflow-hidden">
-                        <img
-                          src={chop.logo || "/placeholder.svg"}
-                          alt={chop.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-bold text-lg mb-1 leading-tight">{chop.name}</h3>
-                        <div className="flex items-center gap-2 text-blue-100">
-                          <MapPin className="h-4 w-4" />
-                          <span className="text-sm">{chop.location}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  {index === 0 && (
-                    <div className="absolute top-4 right-4">
-                      <Badge className="bg-yellow-500 text-white border-0">
-                        <Award className="h-3 w-3 mr-1" />
-                        #1
-                      </Badge>
-                    </div>
-                  )}
-                </div>
-
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-5 w-5 ${i < Math.floor(chop.rating) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
-                          />
-                        ))}
-                      </div>
-                      <span className="font-bold text-2xl text-gray-900">{chop.rating}</span>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm text-gray-500">отзывов</div>
-                      <div className="font-semibold text-lg text-gray-900">{chop.reviewCount}</div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-gray-500" />
-                      <span className="text-gray-600">{chop.employees} сотр.</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-4 w-4 text-green-500" />
-                      <span className="text-green-600">Проверена</span>
-                    </div>
-                  </div>
-
-                  <div className="mb-4">
-                    <div className="text-sm font-medium text-gray-700 mb-2">Специализация</div>
-                    <div className="flex flex-wrap gap-2">
-                      {chop.specialization.map((spec, idx) => (
-                        <Badge key={idx} variant="outline" className="text-xs">
-                          {spec}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 p-3 rounded-lg mb-4">
-                    <div className="text-xs text-gray-500 mb-1">Последний отзыв:</div>
-                    <div className="text-sm text-gray-700 italic">"{chop.recentReview}"</div>
-                  </div>
-
-                  <Link href={`/catalog/${chop.id}`}>
-                    <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 group-hover:scale-[1.02]">
-                      Подробнее о компании
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
+              <ChopCard key={chop.id} chop={chop} viewMode="grid" showRank={index === 0} />
             ))}
           </div>
         </div>

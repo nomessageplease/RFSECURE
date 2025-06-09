@@ -90,9 +90,6 @@ export function useAuth() {
               setTimeout(() => {
                 window.location.href = "/chop-connection-request"
               }, 2000)
-            } else {
-              // Обновляем страницу для применения изменений
-              router.refresh()
             }
           } else if (attempts < maxAttempts) {
             // Профиль еще не создался, ждем
@@ -108,10 +105,6 @@ export function useAuth() {
         await checkProfile()
       } else {
         setProfile(null)
-        // Обновляем страницу для применения изменений
-        if (event === "SIGNED_OUT") {
-          router.refresh()
-        }
       }
 
       setLoading(false)
@@ -155,11 +148,6 @@ export function useAuth() {
 
       console.log("Результат входа:", { user: data.user?.email, error })
 
-      if (data.user) {
-        // Принудительно обновляем страницу для применения изменений
-        router.refresh()
-      }
-
       return { data, error }
     } catch (error) {
       console.error("Ошибка при входе:", error)
@@ -173,8 +161,8 @@ export function useAuth() {
       const { error } = await supabase.auth.signOut()
 
       if (!error) {
-        // Принудительно обновляем страницу для применения изменений
-        router.refresh()
+        setUser(null)
+        setProfile(null)
       }
 
       return { error }

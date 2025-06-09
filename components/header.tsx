@@ -1,181 +1,195 @@
 "use client"
 
-import type React from "react"
-import Link from "next/link"
-import { Shield, User, LogIn, Menu } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useAuth } from "@/hooks/use-auth"
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { Shield, Menu, X, User, LogOut, Settings, Bell } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { UserRoleSwitcher } from "@/components/user-role-switcher"
+import { useAuth } from "@/hooks/use-auth"
 
-const Header: React.FC = () => {
-  const { user, profile, signOut, loading } = useAuth()
-  const [mounted, setMounted] = useState(false)
+const navigation = [
+  { name: "Главная", href: "/" },
+  { name: "Организации", href: "/chops" },
+  { name: "Вакансии", href: "/jobs" },
+  { name: "Рейтинги", href: "/ratings" },
+  { name: "Отзывы", href: "/reviews" },
+  { name: "Форум", href: "/forum" },
+  { name: "Новости", href: "/news" },
+  { name: "Карта", href: "/map" },
+]
+
+export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
+  const { user, profile, signOut } = useAuth()
 
-  // Решает проблему гидратации
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Закрываем мобильное меню при переходе на другую страницу
-  useEffect(() => {
-    setMobileMenuOpen(false)
-  }, [pathname])
-
-  // Отладочная информация
-  useEffect(() => {
-    console.log("Header auth state:", { user: user?.email, profile: profile?.role, loading })
-  }, [user, profile, loading])
-
-  const getRoleDisplayName = (role: string) => {
-    switch (role) {
-      case "guard":
-        return "👤 Охранник"
-      case "chop":
-        return "🏢 ЧОП"
-      case "moderator":
-        return "🛡️ Модератор"
-      case "admin":
-        return "⚙️ Админ"
-      default:
-        return "👤 Пользователь"
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+    } catch (error) {
+      console.error("Error signing out:", error)
     }
   }
 
-  // Не рендерим ничего до монтирования компонента
-  if (!mounted) {
-    return (
-      <header className="border-b bg-white sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <Shield className="h-7 w-7 text-gray-800" />
-              <h1 className="text-xl font-bold text-gray-900">Охрана РФ</h1>
-            </Link>
-          </div>
-        </div>
-      </header>
-    )
-  }
-
   return (
-    <header className="border-b bg-white sticky top-0 z-50 shadow-sm">
+    <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
       <div className="container mx-auto px-4">
-        <div className="flex items-center h-16">
-          <Link href="/" className="flex items-center gap-2">
-            <Shield className="h-7 w-7 text-gray-800" />
-            <h1 className="text-xl font-bold text-gray-900">Охрана РФ</h1>
+        <div className="flex items-center justify-between h-16">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+              <Shield className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <span className="text-xl font-bold text-gray-900">Охрана РФ</span>
+              <p className="text-xs text-gray-500 leading-none">Модульная платформа</p>
+            </div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-4 ml-8">
-            <Link href="/" className="text-gray-700 hover:text-gray-900 transition-colors text-sm">
-              Главная
-            </Link>
-            <Link href="/chops" className="text-gray-700 hover:text-gray-900 transition-colors text-sm">
-              Организации
-            </Link>
-            <Link href="/forum" className="text-gray-700 hover:text-gray-900 transition-colors text-sm">
-              Форум
-            </Link>
-            <Link href="/jobs" className="text-gray-700 hover:text-gray-900 transition-colors text-sm">
-              Вакансии
-            </Link>
-            <Link href="/news" className="text-gray-700 hover:text-gray-900 transition-colors text-sm">
-              Новости
-            </Link>
-            <Link href="/ratings" className="text-gray-700 hover:text-gray-900 transition-colors text-sm">
-              Рейтинги
-            </Link>
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center space-x-1">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  pathname === item.href
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                }`}
+              >
+                {item.name}
+              </Link>
+            ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-3">
-            {!mounted || loading ? (
-              // Показываем skeleton до полной загрузки
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-16 bg-gray-200 animate-pulse rounded"></div>
-                <div className="h-8 w-20 bg-gray-200 animate-pulse rounded"></div>
-              </div>
-            ) : user ? (
-              // Пользователь авторизован (независимо от наличия профиля)
+          {/* Right Side */}
+          <div className="flex items-center gap-4">
+            {/* Role Switcher */}
+            <UserRoleSwitcher />
+
+            {/* Auth Section */}
+            {mounted && (
               <>
-                <Link href="/profile" className="text-gray-700 hover:text-gray-900 transition-colors text-sm">
-                  Личный кабинет
-                </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    console.log("Выход из системы")
-                    signOut().then(() => {
-                      console.log("Выход выполнен")
-                      window.location.href = "/"
-                    })
-                  }}
-                  className="text-gray-700"
-                >
-                  Выйти
-                </Button>
-              </>
-            ) : (
-              // Неавторизованный пользователь
-              <>
-                <Link href="/auth/sign-in">
-                  <Button variant="outline" size="sm" className="text-gray-700">
-                    <LogIn className="h-4 w-4 mr-2" />
-                    Войти
-                  </Button>
-                </Link>
-                <Link href="/auth/sign-up">
-                  <Button size="sm" className="bg-gray-900 hover:bg-gray-800">
-                    <User className="h-4 w-4 mr-2" />
-                    Регистрация
-                  </Button>
-                </Link>
+                {user ? (
+                  <div className="flex items-center gap-3">
+                    {/* Notifications */}
+                    <Button variant="ghost" size="sm" className="relative">
+                      <Bell className="h-4 w-4" />
+                      <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500">
+                        3
+                      </Badge>
+                    </Button>
+
+                    {/* User Menu */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                          <User className="h-4 w-4" />
+                          <span className="hidden sm:inline">{profile?.full_name || user.email}</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <div className="px-2 py-1.5">
+                          <p className="text-sm font-medium">{profile?.full_name || "Пользователь"}</p>
+                          <p className="text-xs text-gray-500">{user.email}</p>
+                          {profile?.role && (
+                            <Badge variant="outline" className="mt-1 text-xs">
+                              {profile.role === "admin"
+                                ? "Администратор"
+                                : profile.role === "moderator"
+                                  ? "Модератор"
+                                  : profile.role === "chop"
+                                    ? "ЧОП"
+                                    : "Охранник"}
+                            </Badge>
+                          )}
+                        </div>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link href="/profile" className="flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            Личный кабинет
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/notifications" className="flex items-center gap-2">
+                            <Bell className="h-4 w-4" />
+                            Уведомления
+                          </Link>
+                        </DropdownMenuItem>
+                        {profile?.role === "admin" && (
+                          <DropdownMenuItem asChild>
+                            <Link href="/admin" className="flex items-center gap-2">
+                              <Settings className="h-4 w-4" />
+                              Админ-панель
+                            </Link>
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2 text-red-600">
+                          <LogOut className="h-4 w-4" />
+                          Выйти
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Link href="/auth/sign-in">
+                      <Button variant="ghost" size="sm">
+                        Войти
+                      </Button>
+                    </Link>
+                    <Link href="/auth/sign-up">
+                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                        Регистрация
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </>
             )}
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              <Menu className="h-5 w-5" />
+            {/* Mobile Menu Button */}
+            <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           </div>
         </div>
 
-        {/* Мобильное меню */}
+        {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t">
-            <nav className="flex flex-col space-y-3">
-              <Link href="/" className="text-gray-700 hover:text-gray-900 transition-colors">
-                Главная
-              </Link>
-              <Link href="/chops" className="text-gray-700 hover:text-gray-900 transition-colors">
-                Организации
-              </Link>
-              <Link href="/forum" className="text-gray-700 hover:text-gray-900 transition-colors">
-                Форум
-              </Link>
-              <Link href="/jobs" className="text-gray-700 hover:text-gray-900 transition-colors">
-                Вакансии
-              </Link>
-              <Link href="/news" className="text-gray-700 hover:text-gray-900 transition-colors">
-                Новости
-              </Link>
-              <Link href="/ratings" className="text-gray-700 hover:text-gray-900 transition-colors">
-                Рейтинги
-              </Link>
-              {user && (
-                <div className="pt-2 border-t">
-                  <Link href="/profile" className="text-gray-700 hover:text-gray-900 transition-colors block mb-2">
-                    Личный кабинет
-                  </Link>
-                </div>
-              )}
+          <div className="lg:hidden border-t border-gray-200 py-4">
+            <nav className="space-y-2">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    pathname === item.href
+                      ? "bg-blue-100 text-blue-700"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              ))}
             </nav>
           </div>
         )}
@@ -183,5 +197,3 @@ const Header: React.FC = () => {
     </header>
   )
 }
-
-export default Header
