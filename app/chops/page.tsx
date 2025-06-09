@@ -245,38 +245,49 @@ export default function CatalogPage() {
           {sortedCompanies.map((company) => (
             <Card
               key={company.id}
-              className={`group hover:shadow-lg transition-all duration-200 border-0 shadow-sm bg-white cursor-pointer h-[480px] flex flex-col ${
+              className={`group hover:shadow-lg transition-all duration-200 border-0 shadow-sm bg-white cursor-pointer ${
                 viewMode === "list" ? "w-full" : ""
               }`}
             >
-              <CardContent className={viewMode === "grid" ? "p-6 flex flex-col flex-1" : "p-0"}>
+              <CardContent className={viewMode === "grid" ? "p-0 flex flex-col h-full" : "p-0"}>
                 {viewMode === "grid" ? (
                   // Grid View
-                  <div className="space-y-4 flex flex-col flex-1">
-                    {/* Header */}
-                    <div className="flex items-start gap-4">
-                      <Avatar className="h-16 w-16 border-2 border-gray-200">
-                        <AvatarImage src={company.logo || "/placeholder.svg"} alt={company.name} />
-                        <AvatarFallback className="bg-blue-100 text-blue-800 text-lg">
-                          {company.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <h3 className="font-semibold text-lg text-gray-900 group-hover:text-gray-700 transition-colors leading-tight h-14 flex items-center">
+                  <div className="flex flex-col h-full">
+                    {/* Header - фиксированной высоты */}
+                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 p-4 h-32 flex items-center">
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-16 w-16 border-2 border-white/50">
+                          <AvatarImage src={company.logo || "/placeholder.svg"} alt={company.name} />
+                          <AvatarFallback className="bg-blue-100 text-blue-800 text-lg">
+                            {company.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h3 className="font-semibold text-lg text-white leading-tight line-clamp-2">
                             {company.name}
                           </h3>
-                          {company.verified && (
-                            <Badge className="bg-green-100 text-green-800 border-0 text-xs">
-                              <Award className="h-3 w-3 mr-1" />
-                              Проверена
-                            </Badge>
-                          )}
+                          <div className="flex items-center gap-2 text-sm text-white/90 mt-1">
+                            <MapPin className="h-3.5 w-3.5" />
+                            <span>{company.location}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 mb-2">
+                      </div>
+                      {company.verified && (
+                        <Badge className="absolute top-3 right-3 bg-yellow-400 text-yellow-900 border-0 text-xs">
+                          <Award className="h-3 w-3 mr-1" />
+                          №1
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-4 flex-1 flex flex-col">
+                      {/* Rating */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
                           <div className="flex items-center">
                             {[...Array(5)].map((_, i) => (
                               <Star
@@ -287,77 +298,77 @@ export default function CatalogPage() {
                               />
                             ))}
                           </div>
-                          <span className="font-semibold">{company.rating}</span>
-                          <span className="text-gray-500 text-sm">({company.reviewCount})</span>
+                          <span className="font-semibold text-lg">{company.rating}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                          <MapPin className="h-4 w-4" />
-                          <span>{company.location}</span>
+                        <div className="text-sm text-gray-500">
+                          <span className="font-medium">Отзывов: </span>
+                          {company.reviewCount}
                         </div>
                       </div>
-                    </div>
 
-                    {/* Description */}
-                    <p className="text-gray-600 text-sm leading-relaxed h-10 overflow-hidden">{company.description}</p>
-
-                    {/* Specialization */}
-                    <div className="flex flex-wrap gap-2 h-8 overflow-hidden">
-                      {company.specialization.slice(0, 3).map((spec, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {spec}
-                        </Badge>
-                      ))}
-                      {company.specialization.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
-                          +{company.specialization.length - 3}
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Stats */}
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4 text-gray-500" />
-                        <span className="text-gray-600">{company.experience} лет</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-gray-500" />
-                        <span className="text-gray-600">{company.employees} сотр.</span>
-                      </div>
-                    </div>
-
-                    {/* Contact Info - Protected for non-authenticated users */}
-                    {user ? (
-                      <div className="text-sm text-gray-600 space-y-1">
+                      {/* Stats */}
+                      <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4" />
-                          <span>{company.phone}</span>
+                          <Users className="h-4 w-4 text-gray-500" />
+                          <span className="text-gray-600">{company.employees} сотр.</span>
                         </div>
-                        <div className="text-gray-500">{company.email}</div>
+                        <div className="flex items-center gap-1">
+                          {company.verified && (
+                            <Badge className="bg-green-100 text-green-800 border-0 text-xs">Проверена</Badge>
+                          )}
+                        </div>
                       </div>
-                    ) : (
-                      <AuthRequiredOverlay action="увидеть контактную информацию">
-                        <div className="text-sm text-gray-600 space-y-1">
+
+                      {/* Specialization */}
+                      <div className="mb-4">
+                        <div className="text-sm text-gray-500 mb-2">Специализация</div>
+                        <div className="flex flex-wrap gap-2">
+                          {company.specialization.slice(0, 3).map((spec, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {spec}
+                            </Badge>
+                          ))}
+                          {company.specialization.length > 3 && (
+                            <Badge variant="outline" className="text-xs">
+                              +{company.specialization.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Contact Info - Protected for non-authenticated users */}
+                      {user ? (
+                        <div className="text-sm text-gray-600 space-y-1 mt-auto">
                           <div className="flex items-center gap-2">
                             <Phone className="h-4 w-4" />
-                            <span>+7 (***) ***-**-**</span>
+                            <span>{company.phone}</span>
                           </div>
-                          <div className="text-gray-500">***@***.ru</div>
+                          <div className="text-gray-500">{company.email}</div>
                         </div>
-                      </AuthRequiredOverlay>
-                    )}
+                      ) : (
+                        <AuthRequiredOverlay action="увидеть контактную информацию" className="mt-auto">
+                          <div className="text-sm text-gray-600 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4" />
+                              <span>+7 (***) ***-**-**</span>
+                            </div>
+                            <div className="text-gray-500">***@***.ru</div>
+                          </div>
+                        </AuthRequiredOverlay>
+                      )}
 
-                    {/* Price & CTA */}
-                    <div className="flex items-center justify-between pt-4 border-t mt-auto">
-                      <div>
-                        <div className="text-lg font-semibold text-gray-900">{company.price}</div>
-                        <div className="text-xs text-gray-500">за охрану объекта</div>
+                      {/* Price & CTA */}
+                      <div className="flex items-center justify-between pt-4 border-t mt-4">
+                        <div>
+                          <div className="text-lg font-semibold text-gray-900">{company.price}</div>
+                          <div className="text-xs text-gray-500">за охрану объекта</div>
+                        </div>
+                        <Link href={`/chop/${company.id}`}>
+                          <Button size="sm" className="bg-gray-900 hover:bg-gray-800">
+                            Подробнее
+                          </Button>
+                        </Link>
                       </div>
-                      <Link href={`/chop/${company.id}`}>
-                        <Button size="sm" className="bg-gray-900 hover:bg-gray-800">
-                          Подробнее
-                        </Button>
-                      </Link>
                     </div>
                   </div>
                 ) : (
