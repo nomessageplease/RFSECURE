@@ -59,29 +59,33 @@ const roles = [
 export function UserRoleSwitcher() {
   const { role, setRole } = useUserRole()
 
+  const currentRole = roles.find((r) => r.id === role)
+  const Icon = currentRole?.icon
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-2">
-          {roles.find((r) => r.id === role)?.icon && (
-            <roles.find((r) => r.id === role)!.icon className="h-4 w-4" />
-          )}
+          {Icon && <Icon className="h-4 w-4" />}
           <span className="hidden md:inline">
-            {roles.find((r) => r.id === role)?.name || "Роль"}
+            {currentRole?.name || "Роль"}
           </span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        {roles.map((roleOption) => (
-          <DropdownMenuItem
-            key={roleOption.id}
-            onClick={() => setRole(roleOption.id)}
-            className="gap-2"
-          >
-            <roleOption.icon className="h-4 w-4" />
-            <span>{roleOption.name}</span>
-          </DropdownMenuItem>
-        ))}
+        {roles.map((roleOption) => {
+          const RoleIcon = roleOption.icon
+          return (
+            <DropdownMenuItem
+              key={roleOption.id}
+              onClick={() => setRole(roleOption.id)}
+              className="gap-2"
+            >
+              <RoleIcon className="h-4 w-4" />
+              <span>{roleOption.name}</span>
+            </DropdownMenuItem>
+          )
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   )

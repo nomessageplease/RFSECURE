@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect } from "react"
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 
 type UserRole = "user" | "chop" | "admin"
 
@@ -11,7 +11,7 @@ interface UserRoleContextType {
 
 const UserRoleContext = createContext<UserRoleContextType | undefined>(undefined)
 
-export function UserRoleProvider({ children }: { children: React.ReactNode }) {
+export function UserRoleProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<UserRole>("user")
 
   useEffect(() => {
