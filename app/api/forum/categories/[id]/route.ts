@@ -2,13 +2,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
-type RouteContext = {
-  params: {
-    id: string
-  }
-}
-
-export async function PUT(request: NextRequest, context: RouteContext) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const cookieStore = await cookies()
     const supabase = createServerClient(
@@ -50,7 +47,7 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         sort_order,
         updated_at: new Date().toISOString(),
       })
-      .eq("id", context.params.id)
+      .eq("id", params.id)
       .select()
       .single()
 
@@ -64,7 +61,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
   }
 }
 
-export async function DELETE(request: NextRequest, context: RouteContext) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
     const cookieStore = await cookies()
     const supabase = createServerClient(
@@ -97,14 +97,14 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     const { data: topics } = await supabase
       .from("forum_topics")
       .select("id")
-      .eq("category_id", context.params.id)
+      .eq("category_id", params.id)
       .limit(1)
 
     if (topics && topics.length > 0) {
       return NextResponse.json({ error: "Нельзя удалить категорию с существующими темами" }, { status: 400 })
     }
 
-    const { error } = await supabase.from("forum_categories").delete().eq("id", context.params.id)
+    const { error } = await supabase.from("forum_categories").delete().eq("id", params.id)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
