@@ -4,13 +4,15 @@ import { NextResponse, type NextRequest } from "next/server"
 export async function middleware(request: NextRequest) {
   console.log("Middleware: Обработка запроса:", request.nextUrl.pathname)
 
-  let response = NextResponse.next({
+  // Create a response object that we can modify
+  const response = NextResponse.next({
     request: {
       headers: request.headers,
     },
   })
 
   try {
+    // Create a Supabase client configured for middleware usage
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -20,16 +22,7 @@ export async function middleware(request: NextRequest) {
             return request.cookies.get(name)?.value
           },
           set(name: string, value: string, options: any) {
-            request.cookies.set({
-              name,
-              value,
-              ...options,
-            })
-            response = NextResponse.next({
-              request: {
-                headers: request.headers,
-              },
-            })
+            // This is the important part - we need to set cookies on the response
             response.cookies.set({
               name,
               value,
@@ -37,19 +30,9 @@ export async function middleware(request: NextRequest) {
             })
           },
           remove(name: string, options: any) {
-            request.cookies.set({
+            // Also handle cookie removal properly
+            response.cookies.delete({
               name,
-              value: "",
-              ...options,
-            })
-            response = NextResponse.next({
-              request: {
-                headers: request.headers,
-              },
-            })
-            response.cookies.set({
-              name,
-              value: "",
               ...options,
             })
           },
