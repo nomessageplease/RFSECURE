@@ -9,7 +9,9 @@
     "lint": "next lint",
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
-    "clean": "rm -rf .next out dist tsconfig.tsbuildinfo"
+    "clean": "rm -rf .next out dist tsconfig.tsbuildinfo",
+    "clean:all": "rm -rf .next out dist node_modules package-lock.json tsconfig.tsbuildinfo && npm install",
+    "clean:cache": "rm -rf .next && npm run dev"
   },
   "dependencies": {
     "@ai-sdk/openai": "^0.0.66",

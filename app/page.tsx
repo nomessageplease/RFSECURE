@@ -11,14 +11,12 @@ export default function HomePage() {
   const { userRole } = useUserRole()
 
   return (
-    <>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <Header />
-      <main role="main" className="flex-1">
-        <HeroSection userRole={userRole} />
-        <FeaturedCompaniesSection />
-        <ActivitySection />
-      </main>
+      <HeroSection userRole={userRole} />
+      <FeaturedCompaniesSection />
+      <ActivitySection />
       <Footer />
-    </>
+    </div>
   )
 }
