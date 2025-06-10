@@ -21,6 +21,8 @@ import {
   Trash,
   AlertTriangle,
   Settings,
+  ThumbsUp,
+  Filter,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -139,6 +141,17 @@ export default function ForumPage() {
       const categoriesResponse = await fetch("/api/forum/categories")
       const categoriesData = await categoriesResponse.json()
       setCategories(categoriesData.categories || [])
+
+      // Удалите или закомментируйте этот блок:
+      // Добавляем заглушки для lastPost, если их нет
+      // const categoriesWithLastPost = (categoriesData.categories || []).map(category => ({
+      //   ...category,
+      //   topics: category.topics || 0,
+      //   posts: category.posts || 0,
+      //   icon: MessageSquare, // Используем MessageSquare как иконку по умолчанию
+      //   lastPost: category.lastPost || null
+      // }))
+      // setCategories(categoriesWithLastPost)
 
       // Загружаем последние темы
       const topicsResponse = await fetch("/api/forum/topics?limit=10")
@@ -492,7 +505,13 @@ export default function ForumPage() {
               <TabsContent value="categories" className="space-y-6">
                 <div className="grid gap-6">
                   {categories.map((category) => {
-                    const IconComponent = category.icon
+                    // Определяем иконку на основе строкового представления
+                    let IconComponent = MessageSquare
+                    if (category.icon === "Shield") IconComponent = Shield
+                    else if (category.icon === "ThumbsUp") IconComponent = ThumbsUp
+                    else if (category.icon === "Filter") IconComponent = Filter
+                    else if (category.icon === "Bell") IconComponent = Bell
+
                     return (
                       <Card
                         key={category.id}
@@ -524,10 +543,18 @@ export default function ForumPage() {
                               </div>
                             </div>
                             <div className="hidden md:block text-right">
-                              <div className="text-sm font-medium text-gray-900 mb-1">{category.lastPost.title}</div>
-                              <div className="text-xs text-gray-500">
-                                {category.lastPost.author} • {category.lastPost.time}
-                              </div>
+                              {category.lastPost ? (
+                                <>
+                                  <div className="text-sm font-medium text-gray-900 mb-1">
+                                    {category.lastPost.title}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {category.lastPost.author} • {category.lastPost.time}
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="text-sm text-gray-500">Нет сообщений</div>
+                              )}
                             </div>
                           </div>
                         </CardContent>

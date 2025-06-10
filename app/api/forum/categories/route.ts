@@ -17,6 +17,7 @@ export async function GET() {
       },
     )
 
+    // Получаем категории
     const { data: categories, error } = await supabase
       .from("forum_categories")
       .select("*")
@@ -27,8 +28,65 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ categories })
+    // Для каждой категории получаем статистику и последний пост
+    const categoriesWithStats = await Promise.all(
+      categories.map(async (category) => {
+        // Получаем количество тем в категории
+        const { count: topicsCount } = await supabase
+          .from("forum_topics")
+          .select("*", { count: "exact", head: true })
+          .eq("category_id", category.id)
+          .eq("status", "active")
+
+        // Получаем количество постов в категории
+        const { count: postsCount } = await supabase
+          .from("forum_posts")
+          .select("forum_posts.id", { count: "exact", head: true })
+          .eq("status", "active")
+          .in(
+            "topic_id",
+            supabase.from("forum_topics").select("id").eq("category_id", category.id).eq("status", "active"),
+          )
+
+        // Получаем последнюю активную тему в категории
+        const { data: lastTopic } = await supabase
+          .from("forum_topics")
+          .select("id, title, author_name, last_reply_at")
+          .eq("category_id", category.id)
+          .eq("status", "active")
+          .order("last_reply_at", { ascending: false })
+          .limit(1)
+          .single()
+
+        // Формируем объект с информацией о последнем посте
+        const lastPost = lastTopic
+          ? {
+              title: lastTopic.title,
+              author: lastTopic.author_name,
+              time: new Date(lastTopic.last_reply_at).toLocaleString("ru-RU", {
+                day: "numeric",
+                month: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+              }),
+              avatar: "/placeholder.svg?height=40&width=40",
+            }
+          : null
+
+        return {
+          ...category,
+          topics: topicsCount || 0,
+          posts: postsCount || 0,
+          icon: "MessageSquare", // Фронтенд преобразует строку в компонент
+          color: category.color || "bg-blue-100 text-blue-700",
+          lastPost,
+        }
+      }),
+    )
+
+    return NextResponse.json({ categories: categoriesWithStats })
   } catch (error) {
+    console.error("Error fetching categories:", error)
     return NextResponse.json({ error: "Внутренняя ошибка сервера" }, { status: 500 })
   }
 }
