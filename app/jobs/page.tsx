@@ -324,7 +324,6 @@ export default function JobsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCity, setSelectedCity] = useState("Все города")
   const [viewMode, setViewMode] = useState("list")
-  const [excludeWords, setExcludeWords] = useState("")
   const { jobs: realJobs, loading: jobsLoading, searchJobs } = useJobs()
 
   function getDefaultTab() {
@@ -630,54 +629,169 @@ export default function JobsPage() {
               <div className="w-full lg:w-72 flex-shrink-0 space-y-4">
                 <Card className="border-0 shadow-sm">
                   <CardContent className="p-4">
-                    <div className="space-y-4">
+                    <div className="space-y-6">
+                      {/* График работы */}
                       <div>
-                        <h3 className="font-medium mb-2">Исключить слова</h3>
-                        <div className="relative">
-                          <Input
-                            placeholder="Введите слова через запятую"
-                            value={excludeWords}
-                            onChange={(e) => setExcludeWords(e.target.value)}
-                            className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
-                          />
+                        <h3 className="font-medium mb-3">График работы</h3>
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="schedule-shift" />
+                            <Label htmlFor="schedule-shift" className="text-sm">
+                              Сменный
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="schedule-rotation" />
+                            <Label htmlFor="schedule-rotation" className="text-sm">
+                              Вахта
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="schedule-part-time" />
+                            <Label htmlFor="schedule-part-time" className="text-sm">
+                              Подработка
+                            </Label>
+                          </div>
                         </div>
                       </div>
 
                       <Separator />
 
+                      {/* Зарплата */}
                       <div>
-                        <h3 className="font-medium mb-2">Уровень дохода</h3>
+                        <h3 className="font-medium mb-3">Зарплата</h3>
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label htmlFor="salary-from" className="text-xs text-gray-500">
+                                От
+                              </Label>
+                              <Input id="salary-from" placeholder="25000" className="h-8" />
+                            </div>
+                            <div>
+                              <Label htmlFor="salary-to" className="text-xs text-gray-500">
+                                До
+                              </Label>
+                              <Input id="salary-to" placeholder="80000" className="h-8" />
+                            </div>
+                          </div>
+                          <Select defaultValue="month">
+                            <SelectTrigger className="h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="hour">За час</SelectItem>
+                              <SelectItem value="shift">За смену</SelectItem>
+                              <SelectItem value="month">В месяц</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Наличие УЧО */}
+                      <div>
+                        <h3 className="font-medium mb-3">Удостоверение ЧО</h3>
                         <RadioGroup defaultValue="any">
                           <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="any" id="any" />
-                            <Label htmlFor="any" className="text-sm">
-                              Не имеет значения
+                            <RadioGroupItem value="any" id="uco-any" />
+                            <Label htmlFor="uco-any" className="text-sm">
+                              Не требуется
                             </Label>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="25000" id="25000" />
-                            <Label htmlFor="25000" className="text-sm">
-                              от 25 000 ₽
+                            <RadioGroupItem value="4" id="uco-4" />
+                            <Label htmlFor="uco-4" className="text-sm">
+                              4 разряд
                             </Label>
-                            <span className="text-xs text-gray-500 ml-auto">1 107</span>
                           </div>
                           <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="65000" id="65000" />
-                            <Label htmlFor="65000" className="text-sm">
-                              от 65 000 ₽
+                            <RadioGroupItem value="6" id="uco-6" />
+                            <Label htmlFor="uco-6" className="text-sm">
+                              6 разряд
                             </Label>
-                            <span className="text-xs text-gray-500 ml-auto">953</span>
                           </div>
                         </RadioGroup>
                       </div>
 
                       <Separator />
 
+                      {/* Тип объекта */}
                       <div>
-                        <h3 className="font-medium mb-2">Регион</h3>
+                        <h3 className="font-medium mb-3">Тип объекта</h3>
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="object-office" />
+                            <Label htmlFor="object-office" className="text-sm">
+                              Офисные здания и бизнес-центры
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="object-retail" />
+                            <Label htmlFor="object-retail" className="text-sm">
+                              Торговые объекты
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="object-warehouse" />
+                            <Label htmlFor="object-warehouse" className="text-sm">
+                              Склады и логистические комплексы
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="object-industrial" />
+                            <Label htmlFor="object-industrial" className="text-sm">
+                              Промышленные объекты
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="object-bank" />
+                            <Label htmlFor="object-bank" className="text-sm">
+                              Банки и финансовые учреждения
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="object-education" />
+                            <Label htmlFor="object-education" className="text-sm">
+                              Образовательные учреждения
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="object-medical" />
+                            <Label htmlFor="object-medical" className="text-sm">
+                              Медицинские учреждения
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="object-residential" />
+                            <Label htmlFor="object-residential" className="text-sm">
+                              Жилая недвижимость
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="object-special" />
+                            <Label htmlFor="object-special" className="text-sm">
+                              Объекты с повышенными требованиями
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="object-events" />
+                            <Label htmlFor="object-events" className="text-sm">
+                              Мероприятия и временные объекты
+                            </Label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Регион */}
+                      <div>
+                        <h3 className="font-medium mb-3">Регион</h3>
                         <Select value={selectedCity} onValueChange={setSelectedCity}>
                           <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">
-                            <SelectValue placeholder="Город" />
+                            <SelectValue placeholder="Выберите город" />
                           </SelectTrigger>
                           <SelectContent>
                             {cities.map((city) => (
@@ -685,8 +799,248 @@ export default function JobsPage() {
                                 {city}
                               </SelectItem>
                             ))}
+                            <SelectItem value="all-russia">Вся Россия</SelectItem>
                           </SelectContent>
                         </Select>
+                      </div>
+
+                      <Separator />
+
+                      {/* Питание */}
+                      <div>
+                        <h3 className="font-medium mb-3">Питание</h3>
+                        <RadioGroup defaultValue="any">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="any" id="food-any" />
+                            <Label htmlFor="food-any" className="text-sm">
+                              Не важно
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="yes" id="food-yes" />
+                            <Label htmlFor="food-yes" className="text-sm">
+                              Есть
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="no" id="food-no" />
+                            <Label htmlFor="food-no" className="text-sm">
+                              Нет
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+
+                      <Separator />
+
+                      {/* Тип поста */}
+                      <div>
+                        <h3 className="font-medium mb-3">Тип поста</h3>
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="post-kpp" />
+                            <Label htmlFor="post-kpp" className="text-sm">
+                              КПП
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="post-video" />
+                            <Label htmlFor="post-video" className="text-sm">
+                              Видеонаблюдение
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="post-patrol" />
+                            <Label htmlFor="post-patrol" className="text-sm">
+                              Патруль
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="post-stationary" />
+                            <Label htmlFor="post-stationary" className="text-sm">
+                              Стационарный
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="post-transport" />
+                            <Label htmlFor="post-transport" className="text-sm">
+                              Контроль транспорта
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="post-inspection" />
+                            <Label htmlFor="post-inspection" className="text-sm">
+                              Досмотровый
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="post-gbr" />
+                            <Label htmlFor="post-gbr" className="text-sm">
+                              ГБР
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="post-lcn" />
+                            <Label htmlFor="post-lcn" className="text-sm">
+                              ЛЦН
+                            </Label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Опыт работы */}
+                      <div>
+                        <h3 className="font-medium mb-3">Опыт работы</h3>
+                        <RadioGroup defaultValue="any">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="any" id="exp-any" />
+                            <Label htmlFor="exp-any" className="text-sm">
+                              Не требуется
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="1" id="exp-1" />
+                            <Label htmlFor="exp-1" className="text-sm">
+                              От 1 года
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="3" id="exp-3" />
+                            <Label htmlFor="exp-3" className="text-sm">
+                              От 3 лет
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="5" id="exp-5" />
+                            <Label htmlFor="exp-5" className="text-sm">
+                              От 5 лет
+                            </Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+
+                      <Separator />
+
+                      {/* Дополнительные параметры */}
+                      <div>
+                        <h3 className="font-medium mb-3">Дополнительно</h3>
+                        <div className="space-y-3">
+                          <div className="flex items-center space-x-2">
+                            <Checkbox id="criminal-record" />
+                            <Label htmlFor="criminal-record" className="text-sm">
+                              Можно с судимостями
+                            </Label>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm text-gray-600 mb-2 block">Периодичность выплат</Label>
+                            <Select defaultValue="any">
+                              <SelectTrigger className="h-8">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="any">Не важно</SelectItem>
+                                <SelectItem value="monthly">Раз в месяц</SelectItem>
+                                <SelectItem value="bi-monthly">Два раза в месяц</SelectItem>
+                                <SelectItem value="after-work">По окончанию работы</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm text-gray-600 mb-2 block">Вид выплат</Label>
+                            <Select defaultValue="any">
+                              <SelectTrigger className="h-8">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="any">Не важно</SelectItem>
+                                <SelectItem value="cash">В руки</SelectItem>
+                                <SelectItem value="official">Официально</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Рейтинг работодателя */}
+                      <div>
+                        <h3 className="font-medium mb-3">Минимальный рейтинг работодателя</h3>
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="any" id="rating-any" />
+                            <Label htmlFor="rating-any" className="text-sm">
+                              Не важно
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="1" id="rating-1" />
+                            <Label htmlFor="rating-1" className="text-sm flex items-center">
+                              <Star className="h-3 w-3 text-yellow-400 fill-current mr-1" />
+                              1+
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="2" id="rating-2" />
+                            <Label htmlFor="rating-2" className="text-sm flex items-center">
+                              <div className="flex mr-1">
+                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                              </div>
+                              2+
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="3" id="rating-3" />
+                            <Label htmlFor="rating-3" className="text-sm flex items-center">
+                              <div className="flex mr-1">
+                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                              </div>
+                              3+
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="4" id="rating-4" />
+                            <Label htmlFor="rating-4" className="text-sm flex items-center">
+                              <div className="flex mr-1">
+                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                              </div>
+                              4+
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="4.5" id="rating-4.5" />
+                            <Label htmlFor="rating-4.5" className="text-sm flex items-center">
+                              <div className="flex mr-1">
+                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                                <Star className="h-3 w-3 text-yellow-400 fill-current" />
+                              </div>
+                              4.5
+                            </Label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* Кнопки действий */}
+                      <div className="space-y-2">
+                        <Button className="w-full bg-blue-600 hover:bg-blue-700">Применить фильтры</Button>
+                        <Button variant="outline" className="w-full">
+                          Сбросить все
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -1620,7 +1974,7 @@ export default function JobsPage() {
                     <div>
                       <h4 className="font-medium text-blue-800">Улучшите описание вакансии</h4>
                       <p className="text-sm text-blue-700 mt-1">
-                        Добавьте больше деталей о требуемых навыках и обязанностях в вакансию "Охранник 6 разряд" для
+                        Добавьте больше деталейй о требуемых навыках и обязанностях в вакансию "Охранник 6 разряд" для
                         повышения конверсии.
                       </p>
                     </div>
