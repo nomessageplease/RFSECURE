@@ -27,8 +27,16 @@ export function useAuth() {
 
   const supabase = createClient()
 
+  // Check if Supabase is properly configured
+  const isSupabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
   const fetchProfile = useCallback(
     async (userId: string): Promise<boolean> => {
+      if (!isSupabaseConfigured) {
+        console.warn("Supabase not configured, skipping profile fetch")
+        return false
+      }
+
       try {
         const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).single()
 
@@ -72,7 +80,7 @@ export function useAuth() {
         return false
       }
     },
-    [supabase],
+    [supabase, isSupabaseConfigured],
   )
 
   useEffect(() => {
@@ -81,6 +89,21 @@ export function useAuth() {
 
     const initializeAuth = async () => {
       try {
+        if (!isSupabaseConfigured) {
+          console.warn("Supabase not configured. Please add environment variables:")
+          console.warn("NEXT_PUBLIC_SUPABASE_URL")
+          console.warn("NEXT_PUBLIC_SUPABASE_ANON_KEY")
+
+          if (mounted) {
+            setError("Supabase не настроен. Проверьте переменные окружения.")
+            setUser(null)
+            setProfile(null)
+            setLoading(false)
+            setInitialized(true)
+          }
+          return
+        }
+
         // Получаем текущую сессию
         const {
           data: { session },
@@ -134,51 +157,62 @@ export function useAuth() {
 
     initializeAuth()
 
-    // Подписываемся на изменения состояния авторизации
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return
+    // Подписываемся на изменения состояния авторизации только если Supabase настроен
+    let subscription: any = null
+    if (isSupabaseConfigured) {
+      const {
+        data: { subscription: authSubscription },
+      } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (!mounted) return
 
-      console.log("Auth state change:", event, session?.user?.id)
+        console.log("Auth state change:", event, session?.user?.id)
 
-      if (event === "SIGNED_OUT" || !session) {
-        setUser(null)
-        setProfile(null)
-        setError(null)
-        setLoading(false)
-        return
-      }
-
-      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-        setUser(session.user)
-        setError(null)
-
-        if (session.user) {
-          const profileSuccess = await fetchProfile(session.user.id)
-          if (!profileSuccess) {
-            // Создаем базовый профиль если не удалось загрузить
-            setProfile({
-              id: session.user.id,
-              email: session.user.email || "",
-              role: "guard",
-              full_name: "Пользователь",
-              created_at: new Date().toISOString(),
-            })
-          }
+        if (event === "SIGNED_OUT" || !session) {
+          setUser(null)
+          setProfile(null)
+          setError(null)
+          setLoading(false)
+          return
         }
-        setLoading(false)
-      }
-    })
+
+        if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+          setUser(session.user)
+          setError(null)
+
+          if (session.user) {
+            const profileSuccess = await fetchProfile(session.user.id)
+            if (!profileSuccess) {
+              // Создаем базовый профиль если не удалось загрузить
+              setProfile({
+                id: session.user.id,
+                email: session.user.email || "",
+                role: "guard",
+                full_name: "Пользователь",
+                created_at: new Date().toISOString(),
+              })
+            }
+          }
+          setLoading(false)
+        }
+      })
+      subscription = authSubscription
+    }
 
     return () => {
       mounted = false
-      subscription.unsubscribe()
+      if (subscription) {
+        subscription.unsubscribe()
+      }
       if (sessionTimeout) clearTimeout(sessionTimeout)
     }
-  }, [fetchProfile, supabase.auth])
+  }, [fetchProfile, supabase.auth, isSupabaseConfigured])
 
   const signOut = async () => {
+    if (!isSupabaseConfigured) {
+      setError("Supabase не настроен")
+      return
+    }
+
     try {
       setLoading(true)
       const { error } = await supabase.auth.signOut()
@@ -198,6 +232,7 @@ export function useAuth() {
 
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) return { error: "Пользователь не авторизован" }
+    if (!isSupabaseConfigured) return { error: "Supabase не настроен" }
 
     try {
       const { data, error } = await supabase.from("profiles").update(updates).eq("id", user.id).select().single()
@@ -219,7 +254,14 @@ export function useAuth() {
     loading,
     error,
     initialized,
+    isSupabaseConfigured,
     signUp: async (email: string, password: string, fullName?: string, role?: string) => {
+      if (!isSupabaseConfigured) {
+        const errorMessage = "Supabase не настроен"
+        setError(errorMessage)
+        return { data: null, error: new Error(errorMessage) }
+      }
+
       try {
         setLoading(true)
         setError(null)
