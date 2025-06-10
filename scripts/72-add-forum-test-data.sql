@@ -1,71 +1,34 @@
 -- Добавление тестовых данных для форума
-
--- Добавляем категории форума
 INSERT INTO forum_categories (name, description, icon, color, sort_order) VALUES
-('Общие вопросы', 'Общие вопросы о работе охранных компаний', 'Shield', 'blue', 1),
-('Отзывы и рекомендации', 'Делитесь опытом работы с охранными компаниями', 'ThumbsUp', 'green', 2),
-('Правовые вопросы', 'Юридические аспекты охранной деятельности', 'Scale', 'purple', 3),
-('Технические средства', 'Обсуждение охранного оборудования и технологий', 'Settings', 'orange', 4),
-('Работа и карьера', 'Вопросы трудоустройства и карьерного роста', 'Briefcase', 'indigo', 5);
+('Общие вопросы', 'Общие вопросы о работе охранных компаний', 'Shield', 'bg-blue-100 text-blue-700', 1),
+('Отзывы и рекомендации', 'Делитесь опытом работы с охранными компаниями', 'ThumbsUp', 'bg-green-100 text-green-700', 2),
+('Правовые вопросы', 'Юридические аспекты охранной деятельности', 'Filter', 'bg-purple-100 text-purple-700', 3),
+('Технические средства', 'Обсуждение охранного оборудования и технологий', 'Bell', 'bg-orange-100 text-orange-700', 4)
+ON CONFLICT DO NOTHING;
 
--- Получаем ID категорий для создания тем
+-- Добавление тестовых тем (только если есть пользователи)
 DO $$
 DECLARE
-    cat_general UUID;
-    cat_reviews UUID;
-    cat_legal UUID;
-    cat_tech UUID;
-    cat_career UUID;
-    admin_id UUID;
-    user_id UUID;
+  admin_user_id UUID;
+  category_general INTEGER;
+  category_reviews INTEGER;
 BEGIN
-    -- Получаем ID категорий
-    SELECT id INTO cat_general FROM forum_categories WHERE name = 'Общие вопросы';
-    SELECT id INTO cat_reviews FROM forum_categories WHERE name = 'Отзывы и рекомендации';
-    SELECT id INTO cat_legal FROM forum_categories WHERE name = 'Правовые вопросы';
-    SELECT id INTO cat_tech FROM forum_categories WHERE name = 'Технические средства';
-    SELECT id INTO cat_career FROM forum_categories WHERE name = 'Работа и карьера';
+  -- Находим админа
+  SELECT id INTO admin_user_id FROM auth.users WHERE email = 'admin@chopy.ru' LIMIT 1;
+  
+  -- Находим категории
+  SELECT id INTO category_general FROM forum_categories WHERE name = 'Общие вопросы' LIMIT 1;
+  SELECT id INTO category_reviews FROM forum_categories WHERE name = 'Отзывы и рекомендации' LIMIT 1;
+  
+  -- Если есть админ и категории, добавляем темы
+  IF admin_user_id IS NOT NULL AND category_general IS NOT NULL THEN
+    INSERT INTO forum_topics (category_id, title, content, author_id, author_name, is_pinned, views_count, replies_count) VALUES
+    (category_general, 'Добро пожаловать на форум!', 'Это первая тема на нашем форуме. Здесь вы можете обсуждать вопросы безопасности.', admin_user_id, 'Администратор', true, 150, 5),
+    (category_general, 'Правила форума', 'Ознакомьтесь с правилами поведения на форуме.', admin_user_id, 'Администратор', true, 89, 2);
     
-    -- Получаем ID пользователей
-    SELECT id INTO admin_id FROM profiles WHERE role = 'admin' LIMIT 1;
-    SELECT id INTO user_id FROM profiles WHERE role = 'user' LIMIT 1;
-    
-    -- Если нет пользователей, создаем тестовых
-    IF admin_id IS NULL THEN
-        INSERT INTO profiles (id, email, full_name, role) 
-        VALUES (gen_random_uuid(), 'admin@test.com', 'Администратор', 'admin')
-        RETURNING id INTO admin_id;
+    IF category_reviews IS NOT NULL THEN
+      INSERT INTO forum_topics (category_id, title, content, author_id, author_name, views_count, replies_count) VALUES
+      (category_reviews, 'Как оставить отзыв о ЧОП', 'Инструкция по оставлению отзывов о частных охранных предприятиях.', admin_user_id, 'Администратор', 67, 8);
     END IF;
-    
-    IF user_id IS NULL THEN
-        INSERT INTO profiles (id, email, full_name, role) 
-        VALUES (gen_random_uuid(), 'user@test.com', 'Тестовый пользователь', 'user')
-        RETURNING id INTO user_id;
-    END IF;
-    
-    -- Создаем тестовые темы
-    INSERT INTO forum_topics (category_id, title, content, author_id, author_name, is_pinned, views) VALUES
-    (cat_general, 'Рейтинг лучших охранных компаний Москвы 2024', 
-     'Давайте обсудим, какие охранные компании в Москве показывают лучшие результаты в 2024 году. Поделитесь своим опытом!', 
-     admin_id, 'Администратор', true, 1234),
-    
-    (cat_general, 'Как проверить лицензию охранной компании?', 
-     'Подскажите, как правильно проверить действительность лицензии охранной компании? Какие документы должны быть?', 
-     user_id, 'Тестовый пользователь', false, 567),
-    
-    (cat_reviews, 'Опыт работы с компанией "Альфа-Безопасность"', 
-     'Хочу поделиться своим опытом сотрудничества с охранной компанией "Альфа-Безопасность". В целом остался доволен...', 
-     user_id, 'Тестовый пользователь', false, 432),
-    
-    (cat_legal, 'Ответственность охранной компании за ущерб', 
-     'Вопрос по юридической ответственности: если во время работы охранников произошел ущерб, кто несет ответственность?', 
-     user_id, 'Тестовый пользователь', false, 289),
-    
-    (cat_tech, 'Новые системы видеонаблюдения 2024', 
-     'Обсуждаем новинки в области систем видеонаблюдения. Какие технологии стоит внедрять в 2024 году?', 
-     admin_id, 'Администратор', false, 156),
-    
-    (cat_career, 'Требования к охранникам в 2024 году', 
-     'Какие требования предъявляют работодатели к охранникам? Какие курсы и сертификаты нужно получить?', 
-     user_id, 'Тестовый пользователь', false, 345);
+  END IF;
 END $$;

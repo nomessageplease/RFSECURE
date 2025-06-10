@@ -1,214 +1,211 @@
 "use client"
 
-import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
-
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import { Shield, Menu, X, User, LogOut, Settings, Bell } from "lucide-react"
+import { usePathname } from "next/navigation"
+import { useAuth } from "@/hooks/use-auth"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { UserRoleSwitcher } from "@/components/user-role-switcher"
-import { useAuth } from "@/hooks/use-auth"
-
-const navigation = [
-  { name: "Главная", href: "/" },
-  { name: "Организации", href: "/chops" },
-  { name: "Вакансии", href: "/jobs" },
-  { name: "Форум", href: "/forum" },
-  { name: "Новости", href: "/news" },
-]
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Bell, Menu, X, Shield, User, LogOut, Settings, ChevronDown } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { RoleBadge } from "@/components/role-badge"
 
 export default function Header() {
+  const { user, profile, loading, initialized, signOut } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
-  const router = useRouter()
-  const { user, profile, signOut, loading } = useAuth()
   const [displayName, setDisplayName] = useState<string>("")
 
+  // Стабилизируем отображаемое имя
   useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  useEffect(() => {
-    if (profile?.full_name) {
-      setDisplayName(profile.full_name)
-    } else if (user?.email && !displayName) {
-      setDisplayName(user.email.split("@")[0])
+    if (initialized && user && profile) {
+      if (profile.full_name && profile.full_name !== "Пользователь") {
+        setDisplayName(profile.full_name)
+      } else if (user.email) {
+        const emailName = user.email.split("@")[0]
+        setDisplayName(emailName.charAt(0).toUpperCase() + emailName.slice(1))
+      } else {
+        setDisplayName("Пользователь")
+      }
     }
-  }, [profile?.full_name, user?.email, displayName])
+  }, [user, profile, initialized])
 
-  const handleSignOut = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    try {
-      await signOut()
-      router.push("/")
-    } catch (error) {
-      console.error("Error signing out:", error)
+  const handleSignOut = async () => {
+    await signOut()
+    window.location.href = "/"
+  }
+
+  const isActive = (path: string) => {
+    if (path === "/" && pathname !== "/") {
+      return false
     }
+    return pathname?.startsWith(path)
   }
 
-  const handleAdminPanelClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    router.push("/admin")
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2)
   }
 
-  const handleProfileClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    router.push("/profile")
+  const getAvatarFallback = () => {
+    if (displayName) {
+      return getInitials(displayName)
+    }
+    return "У" // Пользователь
   }
 
-  const handleNotificationsClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    router.push("/notifications")
-  }
+  const navItems = [
+    { name: "Главная", path: "/" },
+    { name: "Организации", path: "/chops" },
+    { name: "Вакансии", path: "/jobs" },
+    { name: "Форум", path: "/forum" },
+    { name: "Новости", path: "/news" },
+  ]
+
+  // Показываем загрузку только если не инициализировано
+  const showLoading = !initialized || (loading && !user && !profile)
+  // Показываем авторизованное состояние если есть пользователь ИЛИ если есть displayName
+  const showAuthorized = initialized && user && (profile || displayName)
+  // Показываем неавторизованное состояние только если точно не авторизован
+  const showUnauthorized = initialized && !user && !loading
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-      <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-              <Shield className="h-6 w-6 text-white" />
+    <header className="bg-white border-b sticky top-0 z-40">
+      <div className="container mx-auto px-4 flex items-center justify-between h-16">
+        <div className="flex items-center gap-8">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <Shield className="h-5 w-5 text-white" />
             </div>
             <div>
-              <span className="text-xl font-bold text-gray-900">Охрана РФ</span>
-              <p className="text-xs text-gray-500 leading-none">Модульная платформа</p>
+              <span className="font-bold text-lg">Охрана РФ</span>
+              <span className="text-xs text-gray-500 block -mt-1">Модульная платформа</span>
             </div>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-1">
-            {navigation.map((item) => (
+          <nav className="hidden md:flex items-center gap-1">
+            {navItems.map((item) => (
               <Link
-                key={item.name}
-                href={item.href}
-                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  pathname === item.href
-                    ? "bg-blue-100 text-blue-700"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                key={item.path}
+                href={item.path}
+                className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                  isActive(item.path)
+                    ? "text-blue-700 bg-blue-50"
+                    : "text-gray-700 hover:text-blue-700 hover:bg-gray-50"
                 }`}
               >
                 {item.name}
               </Link>
             ))}
           </nav>
-
-          {/* Right Side */}
-          <div className="flex items-center gap-4">
-            {/* Role Switcher */}
-            <UserRoleSwitcher />
-
-            {/* Auth Section */}
-            {mounted && (
-              <>
-                {user ? (
-                  <div className="flex items-center gap-3">
-                    {/* Notifications */}
-                    <Button variant="ghost" size="sm" className="relative" onClick={handleNotificationsClick}>
-                      <Bell className="h-4 w-4" />
-                      <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500">
-                        3
-                      </Badge>
-                    </Button>
-
-                    {/* User Menu */}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                          <User className="h-4 w-4" />
-                          <span className="hidden sm:inline">{displayName || "Пользователь"}</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-56">
-                        <div className="px-2 py-1.5">
-                          <p className="text-sm font-medium">{displayName || "Пользователь"}</p>
-                          <p className="text-xs text-gray-500">{user?.email}</p>
-                          {profile?.role && (
-                            <Badge variant="outline" className="mt-1 text-xs">
-                              {profile.role === "admin"
-                                ? "Администратор"
-                                : profile.role === "moderator"
-                                  ? "Модератор"
-                                  : profile.role === "chop"
-                                    ? "ЧОП"
-                                    : "Охранник"}
-                            </Badge>
-                          )}
-                        </div>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleProfileClick}>
-                          <User className="h-4 w-4 mr-2" />
-                          Личный кабинет
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={handleNotificationsClick}>
-                          <Bell className="h-4 w-4 mr-2" />
-                          Уведомления
-                        </DropdownMenuItem>
-                        {profile?.role === "admin" && (
-                          <DropdownMenuItem onClick={handleAdminPanelClick}>
-                            <Settings className="h-4 w-4 mr-2" />
-                            Админ-панель
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
-                          <LogOut className="h-4 w-4 mr-2" />
-                          Выйти
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Link href="/auth/sign-in">
-                      <Button variant="ghost" size="sm">
-                        Войти
-                      </Button>
-                    </Link>
-                    <Link href="/auth/sign-up">
-                      <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                        Регистрация
-                      </Button>
-                    </Link>
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Mobile Menu Button */}
-            <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-          </div>
         </div>
 
-        {/* Mobile Navigation */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-gray-200 py-4">
-            <nav className="space-y-2">
-              {navigation.map((item) => (
+        <div className="flex items-center gap-2">
+          {showAuthorized ? (
+            <>
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              </Button>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>{getAvatarFallback()}</AvatarFallback>
+                    </Avatar>
+                    <div className="hidden md:block text-left">
+                      <div className="text-sm font-medium">{displayName || "Пользователь"}</div>
+                      {profile?.role && <RoleBadge role={profile.role} className="text-xs" />}
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-gray-500" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Мой аккаунт</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <Link href="/profile">
+                    <DropdownMenuItem>
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Профиль</span>
+                    </DropdownMenuItem>
+                  </Link>
+                  <Link href="/notifications">
+                    <DropdownMenuItem>
+                      <Bell className="mr-2 h-4 w-4" />
+                      <span>Уведомления</span>
+                      <Badge className="ml-auto bg-red-500 text-white text-xs">3</Badge>
+                    </DropdownMenuItem>
+                  </Link>
+                  {profile?.role === "admin" && (
+                    <Link href="/admin/dashboard">
+                      <DropdownMenuItem>
+                        <Shield className="mr-2 h-4 w-4" />
+                        <span>Админ-панель</span>
+                      </DropdownMenuItem>
+                    </Link>
+                  )}
+                  <Link href="/settings">
+                    <DropdownMenuItem>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Настройки</span>
+                    </DropdownMenuItem>
+                  </Link>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Выйти</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : showUnauthorized ? (
+            <>
+              <Link href="/auth/sign-in">
+                <Button variant="ghost">Войти</Button>
+              </Link>
+              <Link href="/auth/sign-up">
+                <Button>Регистрация</Button>
+              </Link>
+            </>
+          ) : showLoading ? (
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 bg-gray-200 animate-pulse rounded-full"></div>
+              <div className="h-4 w-20 bg-gray-200 animate-pulse rounded"></div>
+            </div>
+          ) : null}
+
+          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
+        </div>
+      </div>
+
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <div className="md:hidden bg-white border-t">
+          <div className="container mx-auto px-4 py-3">
+            <nav className="flex flex-col gap-2">
+              {navItems.map((item) => (
                 <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`block px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    pathname === item.href
-                      ? "bg-blue-100 text-blue-700"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  key={item.path}
+                  href={item.path}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive(item.path)
+                      ? "text-blue-700 bg-blue-50"
+                      : "text-gray-700 hover:text-blue-700 hover:bg-gray-50"
                   }`}
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -217,8 +214,8 @@ export default function Header() {
               ))}
             </nav>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </header>
   )
 }

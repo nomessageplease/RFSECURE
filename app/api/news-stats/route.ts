@@ -5,100 +5,74 @@ export async function GET() {
   try {
     const supabase = await createClient()
 
-    // Получаем общую статистику
-    const { data: totalNews, error: totalError } = await supabase.from("news").select("id", { count: "exact" })
-
-    const { data: publishedNews, error: publishedError } = await supabase
+    // Получаем общую статистику по новостям
+    const { data: newsData, error: newsError } = await supabase
       .from("news")
-      .select("id", { count: "exact" })
-      .eq("status", "published")
+      .select("id, status, views, comments_count, likes_count, category, created_at")
 
-    const { data: draftNews, error: draftError } = await supabase
-      .from("news")
-      .select("id", { count: "exact" })
-      .eq("status", "draft")
-
-    // Получаем статистику просмотров
-    const { data: viewsData, error: viewsError } = await supabase.from("news").select("views")
-
-    const totalViews = viewsData?.reduce((sum, item) => sum + (item.views || 0), 0) || 0
-
-    // Получаем статистику комментариев
-    const { data: commentsData, error: commentsError } = await supabase.from("news").select("comments_count")
-
-    const totalComments = commentsData?.reduce((sum, item) => sum + (item.comments_count || 0), 0) || 0
-
-    // Получаем статистику лайков
-    const { data: likesData, error: likesError } = await supabase.from("news").select("likes")
-
-    const totalLikes = likesData?.reduce((sum, item) => sum + (item.likes || 0), 0) || 0
+    if (newsError) {
+      console.error("Error fetching news stats:", newsError)
+      return NextResponse.json({ error: newsError.message }, { status: 500 })
+    }
 
     // Получаем статистику по категориям
-    const { data: categoryStats, error: categoryError } = await supabase.from("news").select("category")
+    const { data: categoriesData, error: categoriesError } = await supabase.from("news_categories").select("id, name")
 
-    const categoryCounts =
-      categoryStats?.reduce((acc: Record<string, number>, item) => {
-        acc[item.category] = (acc[item.category] || 0) + 1
-        return acc
-      }, {}) || {}
+    if (categoriesError) {
+      console.error("Error fetching categories:", categoriesError)
+      return NextResponse.json({ error: categoriesError.message }, { status: 500 })
+    }
 
-    // Получаем топ новости по просмотрам
-    const { data: topNews, error: topError } = await supabase
+    // Получаем топ новостей по просмотрам
+    const { data: topNews, error: topNewsError } = await supabase
       .from("news")
       .select("id, title, views, created_at")
       .order("views", { ascending: false })
       .limit(5)
 
-    // Получаем статистику за последние 30 дней
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-
-    const { data: recentNews, error: recentError } = await supabase
-      .from("news")
-      .select("id", { count: "exact" })
-      .gte("created_at", thirtyDaysAgo.toISOString())
-
-    if (
-      totalError ||
-      publishedError ||
-      draftError ||
-      viewsError ||
-      commentsError ||
-      likesError ||
-      categoryError ||
-      topError ||
-      recentError
-    ) {
-      console.error("Error fetching stats:", {
-        totalError,
-        publishedError,
-        draftError,
-        viewsError,
-        commentsError,
-        likesError,
-        categoryError,
-        topError,
-        recentError,
-      })
-      return NextResponse.json({ error: "Error fetching statistics" }, { status: 500 })
+    if (topNewsError) {
+      console.error("Error fetching top news:", topNewsError)
+      return NextResponse.json({ error: topNewsError.message }, { status: 500 })
     }
 
-    return NextResponse.json({
-      data: {
-        totalNews: totalNews?.length || 0,
-        publishedNews: publishedNews?.length || 0,
-        draftNews: draftNews?.length || 0,
-        totalViews,
-        totalComments,
-        totalLikes,
-        categoryCounts,
-        topNews: topNews || [],
-        recentNews: recentNews?.length || 0,
-        engagement: totalNews?.length
-          ? Math.round(((totalViews + totalComments + totalLikes) / (totalNews.length * 3)) * 100)
-          : 0,
-      },
+    // Вычисляем статистику
+    const totalNews = newsData.length
+    const publishedNews = newsData.filter((item) => item.status === "published").length
+    const draftNews = newsData.filter((item) => item.status === "draft").length
+    const totalViews = newsData.reduce((sum, item) => sum + (item.views || 0), 0)
+    const totalComments = newsData.reduce((sum, item) => sum + (item.comments_count || 0), 0)
+    const totalLikes = newsData.reduce((sum, item) => sum + (item.likes_count || 0), 0)
+
+    // Вычисляем количество новостей по категориям
+    const categoryCounts: Record<string, number> = {}
+    newsData.forEach((item) => {
+      if (item.category) {
+        categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1
+      }
     })
+
+    // Вычисляем количество новых новостей за последний месяц
+    const oneMonthAgo = new Date()
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
+    const recentNews = newsData.filter((item) => new Date(item.created_at) > oneMonthAgo).length
+
+    // Вычисляем вовлеченность (комментарии + лайки / просмотры * 100)
+    const engagement = totalViews > 0 ? Math.round(((totalComments + totalLikes) / totalViews) * 100) : 0
+
+    const stats = {
+      totalNews,
+      publishedNews,
+      draftNews,
+      totalViews,
+      totalComments,
+      totalLikes,
+      categoryCounts,
+      topNews,
+      recentNews,
+      engagement,
+    }
+
+    return NextResponse.json({ data: stats })
   } catch (error) {
     console.error("Unexpected error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

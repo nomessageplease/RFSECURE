@@ -18,7 +18,7 @@ export function useAuth() {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [retryCount, setRetryCount] = useState(0)
+  const [initialized, setInitialized] = useState(false)
 
   const supabase = createClient()
 
@@ -46,7 +46,7 @@ export function useAuth() {
                 .single()
 
               if (createError) {
-                setError("Не удалось создать профиль")
+                console.error("Profile creation error:", createError)
                 return false
               } else {
                 setProfile(newProfile)
@@ -54,7 +54,7 @@ export function useAuth() {
               }
             }
           } else {
-            setError("Ошибка загрузки профиля")
+            console.error("Profile fetch error:", error)
             return false
           }
         } else {
@@ -63,130 +63,115 @@ export function useAuth() {
         }
         return false
       } catch (err) {
-        setError("Ошибка загрузки профиля")
+        console.error("Profile fetch exception:", err)
         return false
       }
     },
     [supabase],
   )
 
-  const retrySession = useCallback(async () => {
-    if (retryCount >= 3) {
-      setLoading(false)
-      return
-    }
-
-    setRetryCount((prev) => prev + 1)
-
-    try {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession()
-
-      if (sessionError) {
-        setError(sessionError.message)
-        setLoading(false)
-        return
-      }
-
-      if (session?.user) {
-        setUser(session.user)
-        const profileSuccess = await fetchProfile(session.user.id)
-        if (!profileSuccess && retryCount < 2) {
-          setTimeout(retrySession, 1000)
-        } else {
-          setLoading(false)
-        }
-      } else {
-        setUser(null)
-        setProfile(null)
-        setLoading(false)
-      }
-    } catch (err) {
-      setError("Произошла ошибка при проверке авторизации")
-      setLoading(false)
-    }
-  }, [retryCount, supabase, fetchProfile])
-
   useEffect(() => {
     let mounted = true
-    let sessionTimeout: NodeJS.Timeout | null = null
+    const sessionTimeout: NodeJS.Timeout | null = null
 
-    const getSession = async () => {
+    const initializeAuth = async () => {
       try {
+        // Получаем текущую сессию
         const {
           data: { session },
           error: sessionError,
         } = await supabase.auth.getSession()
 
         if (sessionError) {
-          setError(sessionError.message)
-
-          if (sessionError.message.includes("network") || sessionError.message.includes("fetch")) {
-            sessionTimeout = setTimeout(retrySession, 2000)
-          } else {
+          console.error("Session error:", sessionError)
+          if (mounted) {
+            setError(sessionError.message)
+            setUser(null)
+            setProfile(null)
             setLoading(false)
+            setInitialized(true)
           }
           return
         }
 
         if (mounted) {
-          setUser(session?.user ?? null)
-
           if (session?.user) {
+            setUser(session.user)
             const profileSuccess = await fetchProfile(session.user.id)
             if (!profileSuccess) {
-              sessionTimeout = setTimeout(retrySession, 1000)
-            } else {
-              setLoading(false)
+              // Если профиль не загрузился, создаем базовый профиль
+              setProfile({
+                id: session.user.id,
+                email: session.user.email || "",
+                role: "guard",
+                full_name: "Пользователь",
+                created_at: new Date().toISOString(),
+              })
             }
           } else {
+            setUser(null)
             setProfile(null)
-            setLoading(false)
           }
+          setLoading(false)
+          setInitialized(true)
         }
       } catch (err) {
+        console.error("Auth initialization error:", err)
         if (mounted) {
-          setError("Произошла ошибка при проверке авторизации")
-          sessionTimeout = setTimeout(retrySession, 2000)
+          setError("Ошибка инициализации авторизации")
+          setUser(null)
+          setProfile(null)
+          setLoading(false)
+          setInitialized(true)
         }
       }
     }
 
-    getSession()
+    initializeAuth()
 
-    const sessionCheckInterval = setInterval(getSession, 5 * 60 * 1000)
-
+    // Подписываемся на изменения состояния авторизации
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (mounted) {
-        setUser(session?.user ?? null)
-        setError(null)
-        setRetryCount(0)
+      if (!mounted) return
 
-        if (session?.user) {
+      console.log("Auth state change:", event, session?.user?.id)
+
+      if (event === "SIGNED_OUT" || !session) {
+        setUser(null)
+        setProfile(null)
+        setError(null)
+        setLoading(false)
+        return
+      }
+
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        setUser(session.user)
+        setError(null)
+
+        if (session.user) {
           const profileSuccess = await fetchProfile(session.user.id)
           if (!profileSuccess) {
-            sessionTimeout = setTimeout(retrySession, 1000)
-          } else {
-            setLoading(false)
+            // Создаем базовый профиль если не удалось загрузить
+            setProfile({
+              id: session.user.id,
+              email: session.user.email || "",
+              role: "guard",
+              full_name: "Пользователь",
+              created_at: new Date().toISOString(),
+            })
           }
-        } else {
-          setProfile(null)
-          setLoading(false)
         }
+        setLoading(false)
       }
     })
 
     return () => {
       mounted = false
       subscription.unsubscribe()
-      clearInterval(sessionCheckInterval)
       if (sessionTimeout) clearTimeout(sessionTimeout)
     }
-  }, [fetchProfile, retrySession, supabase.auth])
+  }, [fetchProfile, supabase.auth])
 
   const signOut = async () => {
     try {
@@ -197,6 +182,7 @@ export function useAuth() {
       } else {
         setUser(null)
         setProfile(null)
+        setError(null)
       }
     } catch (err) {
       setError("Ошибка при выходе из системы")
@@ -227,6 +213,7 @@ export function useAuth() {
     profile,
     loading,
     error,
+    initialized,
     signOut,
     updateProfile,
     isAdmin: profile?.role === "admin",

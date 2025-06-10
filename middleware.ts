@@ -29,6 +29,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
+  // Защищаем админские страницы
   if (!user && request.nextUrl.pathname.startsWith("/admin")) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = "/auth/sign-in"
@@ -36,7 +37,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
-  if (user && request.nextUrl.pathname.startsWith("/auth")) {
+  // Перенаправляем авторизованных пользователей с auth страниц только если они пытаются зайти на них напрямую
+  // НЕ перенаправляем если пользователь уже на главной странице
+  if (user && request.nextUrl.pathname.startsWith("/auth") && request.nextUrl.pathname !== "/") {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = "/"
     return NextResponse.redirect(redirectUrl)

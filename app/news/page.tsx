@@ -109,6 +109,8 @@ export default function NewsPage() {
     color: "#6B7280",
     sort_order: 0,
   })
+  const [reorderedCategories, setReorderedCategories] = useState<NewsCategory[]>([])
+  const [hasReorderChanges, setHasReorderChanges] = useState(false)
 
   useEffect(() => {
     fetchNews()
@@ -162,6 +164,12 @@ export default function NewsPage() {
       console.error("Error fetching categories:", error)
     }
   }
+
+  useEffect(() => {
+    if (categories.length > 0) {
+      setReorderedCategories([...categories].sort((a, b) => a.sort_order - b.sort_order))
+    }
+  }, [categories])
 
   const fetchStats = async () => {
     try {
@@ -300,12 +308,17 @@ export default function NewsPage() {
 
   const handleCreateCategory = async () => {
     try {
+      const generatedId = generateCategoryId(categoryFormData.name)
+
       const response = await fetch("/api/news-categories", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(categoryFormData),
+        body: JSON.stringify({
+          ...categoryFormData,
+          id: generatedId,
+        }),
       })
 
       if (response.ok) {
@@ -404,6 +417,64 @@ export default function NewsPage() {
     }
   }
 
+  const handleMoveUp = (index: number) => {
+    if (index <= 0) return
+
+    const newCategories = [...reorderedCategories]
+    const temp = newCategories[index]
+    newCategories[index] = newCategories[index - 1]
+    newCategories[index - 1] = temp
+
+    setReorderedCategories(newCategories)
+    setHasReorderChanges(true)
+  }
+
+  const handleMoveDown = (index: number) => {
+    if (index >= reorderedCategories.length - 1) return
+
+    const newCategories = [...reorderedCategories]
+    const temp = newCategories[index]
+    newCategories[index] = newCategories[index + 1]
+    newCategories[index + 1] = temp
+
+    setReorderedCategories(newCategories)
+    setHasReorderChanges(true)
+  }
+
+  const applyReordering = async () => {
+    try {
+      const updates = reorderedCategories.map((category, index) => {
+        return fetch(`/api/news-categories/${category.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...category,
+            sort_order: index,
+          }),
+        })
+      })
+
+      await Promise.all(updates)
+
+      toast({
+        title: "Успех",
+        description: "Порядок категорий обновлен",
+      })
+
+      fetchCategories()
+      setHasReorderChanges(false)
+    } catch (error) {
+      console.error("Error updating categories order:", error)
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить порядок категорий",
+        variant: "destructive",
+      })
+    }
+  }
+
   const moveCategoryUp = async (category: NewsCategory) => {
     const newOrder = category.sort_order - 1
     if (newOrder < 0) return
@@ -460,6 +531,15 @@ export default function NewsPage() {
       color: "#6B7280",
       sort_order: 0,
     })
+  }
+
+  const generateCategoryId = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^\wа-яё]/gi, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .substring(0, 30)
   }
 
   const openEditDialog = (newsItem: News) => {
@@ -1497,16 +1577,22 @@ export default function NewsPage() {
                                 </DialogTitle>
                               </DialogHeader>
                               <div className="space-y-4">
-                                <div>
-                                  <Label htmlFor="category-id">ID категории</Label>
-                                  <Input
-                                    id="category-id"
-                                    placeholder="category-id"
-                                    value={categoryFormData.id}
-                                    onChange={(e) => setCategoryFormData({ ...categoryFormData, id: e.target.value })}
-                                    disabled={!!editingCategory}
-                                  />
-                                </div>
+                                {!editingCategory && (
+                                  <div className="text-sm text-gray-500 mb-4">
+                                    ID категории будет сгенерирован автоматически на основе названия
+                                  </div>
+                                )}
+                                {editingCategory && (
+                                  <div>
+                                    <Label htmlFor="category-id">ID категории</Label>
+                                    <Input
+                                      id="category-id"
+                                      value={categoryFormData.id}
+                                      disabled={true}
+                                      className="bg-gray-50"
+                                    />
+                                  </div>
+                                )}
                                 <div>
                                   <Label htmlFor="category-name">Название</Label>
                                   <Input
@@ -1586,9 +1672,8 @@ export default function NewsPage() {
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        {categories
-                          .sort((a, b) => a.sort_order - b.sort_order)
-                          .map((category) => (
+                        <div className="space-y-4">
+                          {reorderedCategories.map((category, index) => (
                             <div key={category.id} className="flex items-center justify-between p-3 border rounded-lg">
                               <div className="flex items-center gap-3">
                                 <div className="w-4 h-4 rounded" style={{ backgroundColor: category.color }}></div>
@@ -1601,12 +1686,17 @@ export default function NewsPage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => moveCategoryUp(category)}
-                                  disabled={category.sort_order === 0}
+                                  onClick={() => handleMoveUp(index)}
+                                  disabled={index === 0}
                                 >
                                   <ArrowUp className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm" onClick={() => moveCategoryDown(category)}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleMoveDown(index)}
+                                  disabled={index === reorderedCategories.length - 1}
+                                >
                                   <ArrowDown className="h-4 w-4" />
                                 </Button>
                                 <Button
@@ -1630,6 +1720,16 @@ export default function NewsPage() {
                               </div>
                             </div>
                           ))}
+
+                          {hasReorderChanges && (
+                            <div className="flex justify-end mt-4">
+                              <Button onClick={applyReordering} className="bg-green-600 hover:bg-green-700">
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                                Применить изменения порядка
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       </CardContent>
                     </Card>
                   </div>

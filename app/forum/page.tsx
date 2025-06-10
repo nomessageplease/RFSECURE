@@ -39,14 +39,14 @@ interface ForumCategory {
   description: string
   topics: number
   posts: number
-  icon: any // You might want to define a more specific type for icons
+  icon: string
   color: string
-  lastPost: {
+  lastPost?: {
     title: string
     author: string
     time: string
     avatar: string
-  }
+  } | null
 }
 
 interface ForumTopic {
@@ -62,57 +62,6 @@ interface ForumTopic {
   status: string
 }
 
-const hotTopics = [
-  {
-    id: 1,
-    title: "Рейтинг лучших охранных компаний Москвы 2024",
-    author: "Администратор",
-    authorAvatar: "/placeholder.svg?height=40&width=40",
-    replies: 45,
-    views: 1234,
-    lastReply: "30 мин назад",
-    isPinned: true,
-    isHot: true,
-    status: "active",
-  },
-  {
-    id: 2,
-    title: "Как проверить лицензию охранной компании?",
-    author: "Михаил К.",
-    authorAvatar: "/placeholder.svg?height=40&width=40",
-    replies: 23,
-    views: 567,
-    lastReply: "1 час назад",
-    isPinned: false,
-    isHot: true,
-    status: "active",
-  },
-  {
-    id: 3,
-    title: "Проблемы с компанией Гарант-Охрана",
-    author: "Елена С.",
-    authorAvatar: "/placeholder.svg?height=40&width=40",
-    replies: 18,
-    views: 432,
-    lastReply: "2 часа назад",
-    isPinned: false,
-    isHot: false,
-    status: "pending",
-  },
-  {
-    id: 4,
-    title: "Стоимость охранных услуг в регионах",
-    author: "Дмитрий П.",
-    authorAvatar: "/placeholder.svg?height=40&width=40",
-    replies: 31,
-    views: 789,
-    lastReply: "3 часа назад",
-    isPinned: false,
-    isHot: true,
-    status: "active",
-  },
-]
-
 const activeUsers = [
   { name: "Михаил К.", posts: 234, reputation: 1250, avatar: "/placeholder.svg?height=40&width=40" },
   { name: "Елена С.", posts: 189, reputation: 980, avatar: "/placeholder.svg?height=40&width=40" },
@@ -127,6 +76,7 @@ export default function ForumPage() {
   const [categories, setCategories] = useState<ForumCategory[]>([])
   const [topics, setTopics] = useState<ForumTopic[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -136,29 +86,40 @@ export default function ForumPage() {
   const fetchForumData = async () => {
     try {
       setLoading(true)
+      setError(null)
 
       // Загружаем категории
-      const categoriesResponse = await fetch("/api/forum/categories")
-      const categoriesData = await categoriesResponse.json()
-      setCategories(categoriesData.categories || [])
-
-      // Удалите или закомментируйте этот блок:
-      // Добавляем заглушки для lastPost, если их нет
-      // const categoriesWithLastPost = (categoriesData.categories || []).map(category => ({
-      //   ...category,
-      //   topics: category.topics || 0,
-      //   posts: category.posts || 0,
-      //   icon: MessageSquare, // Используем MessageSquare как иконку по умолчанию
-      //   lastPost: category.lastPost || null
-      // }))
-      // setCategories(categoriesWithLastPost)
+      try {
+        const categoriesResponse = await fetch("/api/forum/categories")
+        if (categoriesResponse.ok) {
+          const categoriesData = await categoriesResponse.json()
+          setCategories(categoriesData.categories || [])
+        } else {
+          console.log("Categories API returned error, using fallback")
+          setCategories([])
+        }
+      } catch (categoriesError) {
+        console.log("Failed to load categories:", categoriesError)
+        setCategories([])
+      }
 
       // Загружаем последние темы
-      const topicsResponse = await fetch("/api/forum/topics?limit=10")
-      const topicsData = await topicsResponse.json()
-      setTopics(topicsData.topics || [])
+      try {
+        const topicsResponse = await fetch("/api/forum/topics?limit=10")
+        if (topicsResponse.ok) {
+          const topicsData = await topicsResponse.json()
+          setTopics(topicsData.topics || [])
+        } else {
+          console.log("Topics API returned error, using fallback")
+          setTopics([])
+        }
+      } catch (topicsError) {
+        console.log("Failed to load topics:", topicsError)
+        setTopics([])
+      }
     } catch (error) {
       console.error("Ошибка загрузки данных форума:", error)
+      setError("Не удалось загрузить данные форума")
     } finally {
       setLoading(false)
     }
@@ -290,7 +251,7 @@ export default function ForumPage() {
       case "moderator":
         return (
           <div className="flex gap-2">
-            <Badge className="bg-orange-100 text-orange-800 border-0">На модерации: 5</Badge>
+            <Badge className="bg-orange-100 text-orange-800 border-0">На модерации: 0</Badge>
             <Button variant="outline" size="sm" className="hidden md:flex">
               <Shield className="h-4 w-4 mr-2" />
               Правила
@@ -319,11 +280,11 @@ export default function ForumPage() {
     }
   }
 
-  const getTopicActions = (topic) => {
+  const getTopicActions = (topic: ForumTopic) => {
     switch (userRole) {
       case "guard":
       case "chop":
-        return null // Обычные пользователи не имеют специальных действий для тем
+        return null
       case "moderator":
         return (
           <div className="flex gap-2 mt-2">
@@ -374,21 +335,29 @@ export default function ForumPage() {
     }
   }
 
-  const filteredTopics = hotTopics.filter((topic) => {
-    // Для модераторов и админов показываем все темы
-    if (userRole === "moderator" || userRole === "admin") {
-      return true
-    }
-    // Для обычных пользователей показываем только активные
-    return topic.status === "active"
-  })
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="container mx-auto px-4 py-8">
-          <div className="text-center">Загрузка форума...</div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p>Загрузка форума...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <Button onClick={fetchForumData}>Попробовать снова</Button>
+          </div>
         </div>
       </div>
     )
@@ -428,41 +397,9 @@ export default function ForumPage() {
                       <CardTitle>Темы на модерации</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
-                        {hotTopics
-                          .filter((topic) => topic.status === "pending")
-                          .map((topic) => (
-                            <div key={topic.id} className="p-4 border rounded-lg">
-                              <div className="flex items-center gap-3 mb-2">
-                                <Avatar className="h-10 w-10">
-                                  <AvatarImage src={topic.authorAvatar || "/placeholder.svg"} alt={topic.author} />
-                                  <AvatarFallback>
-                                    {topic.author
-                                      .split(" ")
-                                      .map((n) => n[0])
-                                      .join("")}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div>
-                                  <h4 className="font-medium">{topic.title}</h4>
-                                  <p className="text-sm text-gray-600">
-                                    Автор: {topic.author} • {topic.lastReply}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                                  Одобрить
-                                </Button>
-                                <Button variant="outline" size="sm" className="text-red-600">
-                                  Отклонить
-                                </Button>
-                                <Button variant="outline" size="sm">
-                                  Просмотреть
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
+                      <div className="text-center py-8 text-gray-500">
+                        <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Нет тем на модерации</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -472,29 +409,9 @@ export default function ForumPage() {
                       <CardTitle>Сообщения на модерации</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
-                        <div className="p-4 border rounded-lg">
-                          <div className="flex items-center gap-3 mb-2">
-                            <Avatar className="h-10 w-10">
-                              <AvatarFallback>ИП</AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <h4 className="font-medium">Ответ в теме "Проблемы с компанией Гарант-Охрана"</h4>
-                              <p className="text-sm text-gray-600">Автор: Иван П. • 1 час назад</p>
-                            </div>
-                          </div>
-                          <p className="text-sm text-gray-700 mb-3">
-                            Эта компания действительно имеет проблемы с качеством услуг...
-                          </p>
-                          <div className="flex gap-2">
-                            <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                              Одобрить
-                            </Button>
-                            <Button variant="outline" size="sm" className="text-red-600">
-                              Отклонить
-                            </Button>
-                          </div>
-                        </div>
+                      <div className="text-center py-8 text-gray-500">
+                        <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Нет сообщений на модерации</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -504,145 +421,96 @@ export default function ForumPage() {
               {/* Разделы форума */}
               <TabsContent value="categories" className="space-y-6">
                 <div className="grid gap-6">
-                  {categories.map((category) => {
-                    // Определяем иконку на основе строкового представления
-                    let IconComponent = MessageSquare
-                    if (category.icon === "Shield") IconComponent = Shield
-                    else if (category.icon === "ThumbsUp") IconComponent = ThumbsUp
-                    else if (category.icon === "Filter") IconComponent = Filter
-                    else if (category.icon === "Bell") IconComponent = Bell
+                  {categories.length > 0 ? (
+                    categories.map((category) => {
+                      // Определяем иконку на основе строкового представления
+                      let IconComponent = MessageSquare
+                      if (category.icon === "Shield") IconComponent = Shield
+                      else if (category.icon === "ThumbsUp") IconComponent = ThumbsUp
+                      else if (category.icon === "Filter") IconComponent = Filter
+                      else if (category.icon === "Bell") IconComponent = Bell
 
-                    return (
-                      <Card
-                        key={category.id}
-                        className="group hover:shadow-lg transition-all duration-200 border-0 shadow-sm bg-white cursor-pointer"
-                        onClick={() => router.push(`/forum/${category.id}`)}
-                      >
-                        <CardContent className="p-6">
-                          <div className="flex items-start gap-4">
-                            <div className={`p-3 rounded-xl ${category.color} flex-shrink-0`}>
-                              <IconComponent className="h-6 w-6" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                                  {category.name}
-                                </h3>
-                                <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
+                      return (
+                        <Card
+                          key={category.id}
+                          className="group hover:shadow-lg transition-all duration-200 border-0 shadow-sm bg-white cursor-pointer"
+                          onClick={() => router.push(`/forum/${category.id}`)}
+                        >
+                          <CardContent className="p-6">
+                            <div className="flex items-start gap-4">
+                              <div className={`p-3 rounded-xl ${category.color} flex-shrink-0`}>
+                                <IconComponent className="h-6 w-6" />
                               </div>
-                              <p className="text-gray-600 mb-4">{category.description}</p>
-                              <div className="flex items-center gap-6 text-sm text-gray-500">
-                                <div className="flex items-center gap-1">
-                                  <MessageSquare className="h-4 w-4" />
-                                  <span>{category.topics} тем</span>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="text-xl font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                                    {category.name}
+                                  </h3>
+                                  <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-blue-600 transition-colors" />
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <Users className="h-4 w-4" />
-                                  <span>{category.posts} сообщений</span>
+                                <p className="text-gray-600 mb-4">{category.description}</p>
+                                <div className="flex items-center gap-6 text-sm text-gray-500">
+                                  <div className="flex items-center gap-1">
+                                    <MessageSquare className="h-4 w-4" />
+                                    <span>{category.topics} тем</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Users className="h-4 w-4" />
+                                    <span>{category.posts} сообщений</span>
+                                  </div>
                                 </div>
                               </div>
+                              <div className="hidden md:block text-right">
+                                {category.lastPost ? (
+                                  <>
+                                    <div className="text-sm font-medium text-gray-900 mb-1">
+                                      {category.lastPost.title}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {category.lastPost.author} • {category.lastPost.time}
+                                    </div>
+                                  </>
+                                ) : (
+                                  <div className="text-sm text-gray-500">Нет сообщений</div>
+                                )}
+                              </div>
                             </div>
-                            <div className="hidden md:block text-right">
-                              {category.lastPost ? (
-                                <>
-                                  <div className="text-sm font-medium text-gray-900 mb-1">
-                                    {category.lastPost.title}
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    {category.lastPost.author} • {category.lastPost.time}
-                                  </div>
-                                </>
-                              ) : (
-                                <div className="text-sm text-gray-500">Нет сообщений</div>
-                              )}
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
+                          </CardContent>
+                        </Card>
+                      )
+                    })
+                  ) : (
+                    <div className="text-center py-12">
+                      <MessageSquare className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Форум настраивается</h3>
+                      <p className="text-gray-500 mb-4">Разделы форума будут доступны после настройки базы данных</p>
+                      {userRole === "admin" && (
+                        <Button onClick={fetchForumData}>
+                          <Settings className="h-4 w-4 mr-2" />
+                          Обновить
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
               {/* Последние темы */}
               <TabsContent value="recent" className="space-y-6">
                 <div className="space-y-4">
-                  {topics.map((topic) => (
-                    <Card
-                      key={topic.id}
-                      className="group hover:shadow-lg transition-all duration-200 border-0 shadow-sm bg-white cursor-pointer"
-                      onClick={() => router.push(`/forum/topic/${topic.id}`)}
-                    >
-                      <CardContent className="p-6">
-                        <div className="flex items-start gap-4">
-                          <Avatar className="h-12 w-12 flex-shrink-0">
-                            <AvatarImage src={topic.authorAvatar || "/placeholder.svg"} alt={topic.author} />
-                            <AvatarFallback>
-                              {topic.author
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2">
-                              {topic.isPinned && <Pin className="h-4 w-4 text-blue-600" />}
-                              {topic.isHot && <TrendingUp className="h-4 w-4 text-red-500" />}
-                              <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
-                                {topic.title}
-                              </h3>
-                              {(userRole === "moderator" || userRole === "admin") && (
-                                <Badge
-                                  className={
-                                    topic.status === "active"
-                                      ? "bg-green-100 text-green-800"
-                                      : "bg-orange-100 text-orange-800"
-                                  }
-                                >
-                                  {topic.status === "active" ? "Активна" : "На модерации"}
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
-                              <span>Автор: {topic.author}</span>
-                              <div className="flex items-center gap-1">
-                                <MessageSquare className="h-4 w-4" />
-                                <span>{topic.replies}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Eye className="h-4 w-4" />
-                                <span>{topic.views}</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                <span>{topic.lastReply}</span>
-                              </div>
-                            </div>
-                            {getTopicActions(topic)}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </TabsContent>
-
-              {/* Популярные темы */}
-              <TabsContent value="hot" className="space-y-6">
-                <div className="space-y-4">
-                  {filteredTopics
-                    .filter((topic) => topic.isHot)
-                    .map((topic) => (
+                  {topics.length > 0 ? (
+                    topics.map((topic) => (
                       <Card
                         key={topic.id}
                         className="group hover:shadow-lg transition-all duration-200 border-0 shadow-sm bg-white cursor-pointer"
+                        onClick={() => router.push(`/forum/topic/${topic.id}`)}
                       >
                         <CardContent className="p-6">
                           <div className="flex items-start gap-4">
                             <Avatar className="h-12 w-12 flex-shrink-0">
                               <AvatarImage src={topic.authorAvatar || "/placeholder.svg"} alt={topic.author} />
                               <AvatarFallback>
-                                {topic.author
+                                {(topic.author || "U")
                                   .split(" ")
                                   .map((n) => n[0])
                                   .join("")}
@@ -650,13 +518,24 @@ export default function ForumPage() {
                             </Avatar>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-2">
-                                <TrendingUp className="h-4 w-4 text-red-500" />
+                                {topic.isPinned && <Pin className="h-4 w-4 text-blue-600" />}
+                                {topic.isHot && <TrendingUp className="h-4 w-4 text-red-500" />}
                                 <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
                                   {topic.title}
                                 </h3>
-                                <Badge className="bg-red-100 text-red-800 border-0">Популярно</Badge>
+                                {(userRole === "moderator" || userRole === "admin") && (
+                                  <Badge
+                                    className={
+                                      topic.status === "active"
+                                        ? "bg-green-100 text-green-800"
+                                        : "bg-orange-100 text-orange-800"
+                                    }
+                                  >
+                                    {topic.status === "active" ? "Активна" : "На модерации"}
+                                  </Badge>
+                                )}
                               </div>
-                              <div className="flex items-center gap-4 text-sm text-gray-500">
+                              <div className="flex items-center gap-4 text-sm text-gray-500 mb-2">
                                 <span>Автор: {topic.author}</span>
                                 <div className="flex items-center gap-1">
                                   <MessageSquare className="h-4 w-4" />
@@ -671,11 +550,83 @@ export default function ForumPage() {
                                   <span>{topic.lastReply}</span>
                                 </div>
                               </div>
+                              {getTopicActions(topic)}
                             </div>
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
+                    ))
+                  ) : (
+                    <div className="text-center py-12">
+                      <MessageSquare className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Пока нет тем</h3>
+                      <p className="text-gray-500 mb-4">Станьте первым, кто создаст тему для обсуждения</p>
+                      <Button>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Создать тему
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              {/* Популярные темы */}
+              <TabsContent value="hot" className="space-y-6">
+                <div className="space-y-4">
+                  {topics.filter((topic) => topic.isHot).length > 0 ? (
+                    topics
+                      .filter((topic) => topic.isHot)
+                      .map((topic) => (
+                        <Card
+                          key={topic.id}
+                          className="group hover:shadow-lg transition-all duration-200 border-0 shadow-sm bg-white cursor-pointer"
+                        >
+                          <CardContent className="p-6">
+                            <div className="flex items-start gap-4">
+                              <Avatar className="h-12 w-12 flex-shrink-0">
+                                <AvatarImage src={topic.authorAvatar || "/placeholder.svg"} alt={topic.author} />
+                                <AvatarFallback>
+                                  {(topic.author || "U")
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <TrendingUp className="h-4 w-4 text-red-500" />
+                                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                                    {topic.title}
+                                  </h3>
+                                  <Badge className="bg-red-100 text-red-800 border-0">Популярно</Badge>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-gray-500">
+                                  <span>Автор: {topic.author}</span>
+                                  <div className="flex items-center gap-1">
+                                    <MessageSquare className="h-4 w-4" />
+                                    <span>{topic.replies}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Eye className="h-4 w-4" />
+                                    <span>{topic.views}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Clock className="h-4 w-4" />
+                                    <span>{topic.lastReply}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))
+                  ) : (
+                    <div className="text-center py-12">
+                      <TrendingUp className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">Нет популярных тем</h3>
+                      <p className="text-gray-500">Популярные темы появятся после активного обсуждения</p>
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
@@ -687,30 +638,9 @@ export default function ForumPage() {
                       <CardTitle>Жалобы пользователей</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
-                        <div className="p-4 border rounded-lg">
-                          <div className="flex items-center gap-3 mb-2">
-                            <AlertTriangle className="h-5 w-5 text-red-500" />
-                            <div>
-                              <h4 className="font-medium">Спам в теме "Рейтинг охранных компаний"</h4>
-                              <p className="text-sm text-gray-600">Жалоба от: Михаил К. • 2 часа назад</p>
-                            </div>
-                          </div>
-                          <p className="text-sm text-gray-700 mb-3">
-                            Пользователь размещает рекламные сообщения без разрешения...
-                          </p>
-                          <div className="flex gap-2">
-                            <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                              Принять меры
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              Отклонить жалобу
-                            </Button>
-                            <Button variant="outline" size="sm">
-                              Просмотреть
-                            </Button>
-                          </div>
-                        </div>
+                      <div className="text-center py-8 text-gray-500">
+                        <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Нет активных жалоб</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -735,7 +665,7 @@ export default function ForumPage() {
                         <div className="flex items-center justify-between">
                           <span>Автоматическое удаление спама</span>
                           <Button variant="outline" size="sm">
-                            Включено
+                            Выключено
                           </Button>
                         </div>
                         <div className="flex items-center justify-between">
@@ -754,19 +684,19 @@ export default function ForumPage() {
                       <CardContent className="space-y-4">
                         <div className="flex justify-between">
                           <span>Всего тем:</span>
-                          <span className="font-semibold">1,824</span>
+                          <span className="font-semibold">{topics.length}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Всего сообщений:</span>
-                          <span className="font-semibold">13,074</span>
+                          <span className="font-semibold">{topics.reduce((sum, topic) => sum + topic.replies, 0)}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span>Активных пользователей:</span>
-                          <span className="font-semibold">2,456</span>
+                          <span>Активных категорий:</span>
+                          <span className="font-semibold">{categories.length}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>На модерации:</span>
-                          <span className="font-semibold text-orange-600">5</span>
+                          <span className="font-semibold text-orange-600">0</span>
                         </div>
                       </CardContent>
                     </Card>
@@ -796,19 +726,19 @@ export default function ForumPage() {
               <CardContent className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Всего тем:</span>
-                  <span className="font-semibold">1,824</span>
+                  <span className="font-semibold">{topics.length}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Сообщений:</span>
-                  <span className="font-semibold">13,074</span>
+                  <span className="font-semibold">{topics.reduce((sum, topic) => sum + topic.replies, 0)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Участников:</span>
-                  <span className="font-semibold">2,456</span>
+                  <span className="text-gray-600">Категорий:</span>
+                  <span className="font-semibold">{categories.length}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Онлайн:</span>
-                  <span className="font-semibold text-green-600">89</span>
+                  <span className="font-semibold text-green-600">1</span>
                 </div>
               </CardContent>
             </Card>
