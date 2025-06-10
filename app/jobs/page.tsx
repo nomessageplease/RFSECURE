@@ -18,20 +18,14 @@ import {
   XCircle,
   Edit,
   Trash,
-  Filter,
-  Calendar,
   Clock,
   Briefcase,
   AlertCircle,
-  FileText,
   BarChart3,
-  Download,
-  CheckSquare,
-  Printer,
   UserPlus,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -325,6 +319,7 @@ export default function JobsPage() {
   const [selectedCity, setSelectedCity] = useState("Все города")
   const [viewMode, setViewMode] = useState("list")
   const { jobs: realJobs, loading: jobsLoading, searchJobs } = useJobs()
+  const [ratingFilter, setRatingFilter] = useState("any")
 
   function getDefaultTab() {
     switch (userRole) {
@@ -970,7 +965,7 @@ export default function JobsPage() {
                       {/* Рейтинг работодателя */}
                       <div>
                         <h3 className="font-medium mb-3">Минимальный рейтинг работодателя</h3>
-                        <div className="space-y-2">
+                        <RadioGroup value={ratingFilter} onValueChange={setRatingFilter}>
                           <div className="flex items-center space-x-2">
                             <RadioGroupItem value="any" id="rating-any" />
                             <Label htmlFor="rating-any" className="text-sm">
@@ -1030,7 +1025,7 @@ export default function JobsPage() {
                               4.5
                             </Label>
                           </div>
-                        </div>
+                        </RadioGroup>
                       </div>
 
                       <Separator />
@@ -1372,154 +1367,80 @@ export default function JobsPage() {
               <TabsContent value="archived" className="space-y-4">
                 <Card className="border-dashed border-2 p-8 text-center">
                   <CardContent>
-                    <div className="flex flex-col items-center justify-center space-y-3">
-                      <Briefcase className="h-12 w-12 text-gray-400" />
-                      <h3 className="text-lg font-medium">У вас нет архивных вакансий</h3>
-                      <p className="text-gray-500 max-w-md">
-                        Здесь будут отображаться вакансии, которые вы архивировали
-                      </p>
+                    <div className="flex flex-col items-center justify-center space-y-4">
+                      <div className="rounded-full bg-gray-100 p-3">
+                        <Briefcase className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900">Нет архивных вакансий</h3>
+                        <p className="text-gray-500 mt-1">Здесь будут отображаться ваши завершенные вакансии</p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
             </Tabs>
-
-            <div className="mt-8">
-              <h3 className="text-lg font-semibold mb-4">Последние кандидаты</h3>
-              <div className="space-y-4">
-                {candidates.map((candidate) => (
-                  <Card key={candidate.id} className="overflow-hidden border border-gray-200 shadow-sm">
-                    <CardContent className="p-0">
-                      <div className="p-4">
-                        <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
-                            <img
-                              src={candidate.avatar || "/placeholder.svg"}
-                              alt={candidate.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <div className="text-lg font-semibold">{candidate.name}</div>
-                                <div className="text-sm text-gray-600">
-                                  {candidate.position} • {candidate.experience}
-                                </div>
-                                <div className="text-sm text-gray-500 mt-1">
-                                  Отклик на вакансию:{" "}
-                                  <Link href={`/job/1`} className="hover:text-blue-600">
-                                    {candidate.jobTitle}
-                                  </Link>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Badge className={candidate.statusClass}>{candidate.statusText}</Badge>
-                                <div className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">
-                                  Совпадение {candidate.match}%
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="border-t p-3 bg-gray-50 flex flex-wrap justify-between items-center gap-2">
-                        <div className="text-sm text-gray-500">Отклик от {candidate.appliedDate}</div>
-                        <div className="flex flex-wrap gap-2">
-                          <Button variant="outline" size="sm">
-                            <Eye className="h-4 w-4 mr-1" />
-                            Просмотреть
-                          </Button>
-                          <Button variant="outline" size="sm">
-                            <MessageCircle className="h-4 w-4 mr-1" />
-                            Написать
-                          </Button>
-                          <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                            <Calendar className="h-4 w-4 mr-1" />
-                            Пригласить
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
           </TabsContent>
 
-          {/* Вкладка резюме */}
-          <TabsContent value="resumes" className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              {resumes.map((resume) => (
-                <Card
-                  key={resume.id}
-                  className="group hover:shadow-lg transition-all duration-200 border-0 shadow-sm bg-white cursor-pointer"
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4 mb-4">
-                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-800 font-semibold text-lg">
-                          {resume.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">
-                            {resume.name}
-                          </h3>
-                          {resume.verified && (
-                            <Badge className="bg-green-100 text-green-800 border-0 text-xs">Проверен</Badge>
-                          )}
-                          {(userRole === "moderator" || userRole === "admin") && (
-                            <Badge
-                              className={
-                                resume.status === "active"
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-orange-100 text-orange-800"
-                              }
-                            >
-                              {resume.status === "active" ? "Активно" : "На модерации"}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-gray-600 mb-2">{resume.position}</div>
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <MapPin className="h-4 w-4" />
-                            <span>{resume.location}</span>
+          {/* Вкладка для охранников - мои отклики */}
+          <TabsContent value="my-applications" className="space-y-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold">Мои отклики</h2>
+              <p className="text-gray-600">Отслеживайте статус ваших откликов на вакансии</p>
+            </div>
+
+            <div className="space-y-4">
+              {myApplications.map((application) => (
+                <Card key={application.id} className="overflow-hidden border border-gray-200 shadow-sm">
+                  <CardContent className="p-0">
+                    <div className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <Link
+                            href={`/job/${application.jobId}`}
+                            className="text-lg font-semibold hover:text-blue-600 transition-colors"
+                          >
+                            {application.jobTitle}
+                          </Link>
+                          <div className="text-gray-600 mt-1">{application.company}</div>
+                          <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                            <MapPin className="h-3 w-3" />
+                            {application.location}
                           </div>
-                          <span>{resume.experience} лет опыта</span>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <Badge className={application.statusClass}>{application.statusText}</Badge>
+                          {application.hasNewMessages && (
+                            <Badge className="bg-red-100 text-red-800 text-xs">Новое сообщение</Badge>
+                          )}
                         </div>
                       </div>
+
+                      {application.message && (
+                        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                          <p className="text-sm text-gray-700">{application.message}</p>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="flex items-center">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`h-4 w-4 ${
-                              i < Math.floor(resume.rating) ? "text-yellow-400 fill-current" : "text-gray-300"
-                            }`}
-                          />
-                        ))}
+                    <div className="border-t p-3 bg-gray-50 flex flex-wrap justify-between items-center gap-2">
+                      <div className="text-sm text-gray-500">Отклик отправлен: {application.appliedDate}</div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm">
+                          <MessageCircle className="h-4 w-4 mr-1" />
+                          Сообщения
+                        </Button>
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4 mr-1" />
+                          Просмотреть вакансию
+                        </Button>
+                        {application.status === "invited" && (
+                          <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Принять приглашение
+                          </Button>
+                        )}
                       </div>
-                      <span className="font-semibold">{resume.rating}</span>
-                      <span className="text-gray-500 text-sm">({resume.recommendations} рекомендаций)</span>
-                    </div>
-
-                    <p className="text-gray-700 mb-4 text-sm leading-relaxed">{resume.description}</p>
-
-                    <div className="flex items-center justify-between pt-4 border-t">
-                      <div>
-                        <div className="font-semibold text-gray-900">{resume.salary}</div>
-                        <div className="text-xs text-gray-500">Последняя активность: {resume.lastActivity}</div>
-                      </div>
-                      {getResumeActions(resume)}
                     </div>
                   </CardContent>
                 </Card>
@@ -1527,651 +1448,311 @@ export default function JobsPage() {
             </div>
           </TabsContent>
 
-          {/* Вкладка модерации */}
-          <TabsContent value="moderation" className="space-y-6">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-xl font-bold">Модерация контента</h2>
-                <p className="text-gray-600">Проверка и управление вакансиями и резюме</p>
-              </div>
-              <div className="flex gap-2">
-                <Select defaultValue="all">
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Фильтр" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Все элементы</SelectItem>
-                    <SelectItem value="high">Высокий приоритет</SelectItem>
-                    <SelectItem value="medium">Средний приоритет</SelectItem>
-                    <SelectItem value="low">Низкий приоритет</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="outline">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Фильтры
-                </Button>
-              </div>
+          {/* Вкладка для ЧОПов - резюме */}
+          <TabsContent value="resumes" className="space-y-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold">База резюме</h2>
+              <p className="text-gray-600">Найдите подходящих кандидатов для ваших вакансий</p>
             </div>
 
-            <div className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="border-0 shadow-sm bg-orange-50">
-                  <CardContent className="p-6 flex flex-col items-center justify-center">
-                    <div className="text-3xl font-bold text-orange-600 mb-1">{moderationItems.length}</div>
-                    <div className="text-sm text-orange-800">Ожидают проверки</div>
-                  </CardContent>
-                </Card>
-                <Card className="border-0 shadow-sm bg-green-50">
-                  <CardContent className="p-6 flex flex-col items-center justify-center">
-                    <div className="text-3xl font-bold text-green-600 mb-1">24</div>
-                    <div className="text-sm text-green-800">Одобрено сегодня</div>
-                  </CardContent>
-                </Card>
-                <Card className="border-0 shadow-sm bg-red-50">
-                  <CardContent className="p-6 flex flex-col items-center justify-center">
-                    <div className="text-3xl font-bold text-red-600 mb-1">3</div>
-                    <div className="text-sm text-red-800">Отклонено сегодня</div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              <Card className="border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle>Элементы на модерации</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {moderationItems.map((item) => (
-                      <Card key={item.id} className="overflow-hidden border border-gray-200">
-                        <CardContent className="p-0">
-                          <div className="p-4">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <Badge
-                                    className={
-                                      item.type === "job"
-                                        ? "bg-blue-100 text-blue-800"
-                                        : "bg-purple-100 text-purple-800"
-                                    }
-                                  >
-                                    {item.type === "job" ? "Вакансия" : "Резюме"}
-                                  </Badge>
-                                  <Badge
-                                    className={
-                                      item.priority === "high"
-                                        ? "bg-red-100 text-red-800"
-                                        : item.priority === "medium"
-                                          ? "bg-orange-100 text-orange-800"
-                                          : "bg-green-100 text-green-800"
-                                    }
-                                  >
-                                    {item.priority === "high"
-                                      ? "Высокий приоритет"
-                                      : item.priority === "medium"
-                                        ? "Средний приоритет"
-                                        : "Низкий приоритет"}
-                                  </Badge>
-                                </div>
-                                <h3 className="text-lg font-semibold mt-2">{item.title}</h3>
-                                <div className="text-sm text-gray-600 mt-1">
-                                  {item.type === "job" ? item.company : item.position}
-                                </div>
-                                <div className="text-sm text-gray-500 mt-1">Отправлено: {item.submittedDate}</div>
-                              </div>
-                            </div>
-
-                            {item.issues.length > 0 && (
-                              <Alert className="mt-3 bg-red-50 border-red-100">
-                                <AlertDescription>
-                                  <h4 className="font-medium text-red-800 mb-1">Обнаружены проблемы:</h4>
-                                  <ul className="list-disc pl-5 text-sm text-red-700">
-                                    {item.issues.map((issue, index) => (
-                                      <li key={index}>{issue}</li>
-                                    ))}
-                                  </ul>
-                                </AlertDescription>
-                              </Alert>
-                            )}
-                          </div>
-
-                          <div className="border-t p-3 bg-gray-50 flex justify-between items-center">
-                            <div className="text-sm text-gray-500">ID: {item.id}</div>
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="sm">
-                                <Eye className="h-4 w-4 mr-1" />
-                                Просмотреть
-                              </Button>
-                              <Button variant="outline" size="sm">
-                                <Edit className="h-4 w-4 mr-1" />
-                                Редактировать
-                              </Button>
-                              <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                Одобрить
-                              </Button>
-                              <Button variant="outline" size="sm" className="text-red-600">
-                                <XCircle className="h-4 w-4 mr-1" />
-                                Отклонить
-                              </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-4">Статистика модерации</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="border-0 shadow-sm">
-                  <CardHeader>
-                    <CardTitle>Время обработки</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm text-gray-600">Вакансии</span>
-                          <span className="text-sm font-medium">4.2 часа</span>
+            <div className="space-y-4">
+              {resumes.map((resume) => (
+                <Card key={resume.id} className="overflow-hidden border border-gray-200 shadow-sm">
+                  <CardContent className="p-0">
+                    <div className="p-4">
+                      <div className="flex items-start gap-4">
+                        <div className="w-16 h-16 rounded-full bg-gray-200 flex-shrink-0 overflow-hidden">
+                          <img
+                            src={resume.avatar || "/placeholder.svg"}
+                            alt={resume.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.target.src = "/placeholder.svg?height=64&width=64"
+                            }}
+                          />
                         </div>
-                        <Progress value={42} className="h-2" />
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm text-gray-600">Резюме</span>
-                          <span className="text-sm font-medium">2.8 часа</span>
-                        </div>
-                        <Progress value={28} className="h-2" />
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm text-gray-600">Отзывы</span>
-                          <span className="text-sm font-medium">1.5 часа</span>
-                        </div>
-                        <Progress value={15} className="h-2" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="border-0 shadow-sm">
-                  <CardHeader>
-                    <CardTitle>Результаты модерации</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-center h-[200px]">
-                      <div className="w-[200px] h-[200px] rounded-full border-8 border-green-500 relative flex items-center justify-center">
-                        <div className="w-[150px] h-[150px] rounded-full border-8 border-red-500 relative flex items-center justify-center">
-                          <div className="w-[100px] h-[100px] rounded-full border-8 border-orange-500 flex items-center justify-center">
-                            <div className="text-center">
-                              <div className="text-2xl font-bold">89%</div>
-                              <div className="text-xs text-gray-500">Одобрено</div>
-                            </div>
-                          </div>
-                          <div className="absolute -bottom-4 text-xs text-gray-500">8% Отклонено</div>
-                        </div>
-                        <div className="absolute -bottom-4 text-xs text-gray-500">3% На доработке</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-
-            {userRole === "admin" && (
-              <Card className="border-0 shadow-sm mt-6">
-                <CardHeader>
-                  <CardTitle>Настройки модерации</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium">Автоматическая модерация</h4>
-                        <p className="text-sm text-gray-500">Использовать ИИ для предварительной проверки контента</p>
-                      </div>
-                      <div>
-                        <Button variant="outline">Настроить</Button>
-                      </div>
-                    </div>
-                    <Separator />
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium">Правила модерации</h4>
-                        <p className="text-sm text-gray-500">Управление правилами и критериями проверки</p>
-                      </div>
-                      <div>
-                        <Button variant="outline">Редактировать</Button>
-                      </div>
-                    </div>
-                    <Separator />
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium">Команда модераторов</h4>
-                        <p className="text-sm text-gray-500">Управление доступом и назначение задач</p>
-                      </div>
-                      <div>
-                        <Button variant="outline">Управление</Button>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          {/* Вкладка аналитики */}
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-xl font-bold">Аналитика вакансий</h2>
-                <p className="text-gray-600">Статистика и эффективность ваших вакансий</p>
-              </div>
-              <div className="flex gap-2">
-                <Select defaultValue="week">
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Период" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="day">За день</SelectItem>
-                    <SelectItem value="week">За неделю</SelectItem>
-                    <SelectItem value="month">За месяц</SelectItem>
-                    <SelectItem value="year">За год</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button variant="outline">
-                  <Download className="h-4 w-4 mr-2" />
-                  Экспорт
-                </Button>
-                <Button variant="outline">
-                  <Printer className="h-4 w-4 mr-2" />
-                  Печать
-                </Button>
-              </div>
-            </div>
-
-            {/* Основные метрики */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="border-0 shadow-sm">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="text-gray-500 text-sm">Просмотры вакансий</div>
-                    <div className="bg-blue-100 text-blue-800 p-1 rounded">
-                      <Eye className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">1,234</div>
-                  <div className="flex items-center mt-1">
-                    <Badge className="bg-green-100 text-green-800 border-0">+12%</Badge>
-                    <span className="text-xs text-gray-500 ml-2">vs прошлый период</span>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-0 shadow-sm">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="text-gray-500 text-sm">Отклики</div>
-                    <div className="bg-purple-100 text-purple-800 p-1 rounded">
-                      <UserPlus className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">175</div>
-                  <div className="flex items-center mt-1">
-                    <Badge className="bg-green-100 text-green-800 border-0">+8%</Badge>
-                    <span className="text-xs text-gray-500 ml-2">vs прошлый период</span>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-0 shadow-sm">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="text-gray-500 text-sm">Конверсия</div>
-                    <div className="bg-yellow-100 text-yellow-800 p-1 rounded">
-                      <BarChart3 className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">{analyticsData.conversionRate}%</div>
-                  <div className="flex items-center mt-1">
-                    <Badge className="bg-green-100 text-green-800 border-0">+2%</Badge>
-                    <span className="text-xs text-gray-500 ml-2">vs прошлый период</span>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="border-0 shadow-sm">
-                <CardContent className="p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <div className="text-gray-500 text-sm">Среднее время ответа</div>
-                    <div className="bg-green-100 text-green-800 p-1 rounded">
-                      <Clock className="h-4 w-4" />
-                    </div>
-                  </div>
-                  <div className="text-2xl font-bold text-gray-900">{analyticsData.averageResponseTime}</div>
-                  <div className="flex items-center mt-1">
-                    <Badge className="bg-red-100 text-red-800 border-0">+1ч</Badge>
-                    <span className="text-xs text-gray-500 ml-2">vs прошлый период</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Графики и детальная аналитика */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-              <Card className="border-0 shadow-sm lg:col-span-2">
-                <CardHeader>
-                  <CardTitle>Активность по вакансиям</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[300px] flex items-end justify-between gap-2">
-                    {analyticsData.views.map((view, index) => (
-                      <div key={index} className="relative flex flex-col items-center group">
-                        <div className="text-xs text-gray-500 mb-1 opacity-0 group-hover:opacity-100 absolute -top-6 transition-opacity">
-                          {view} / {analyticsData.applications[index]}
-                        </div>
-                        <div className="w-12 bg-blue-100 rounded-t" style={{ height: `${view / 3}px` }}></div>
-                        <div
-                          className="w-12 bg-blue-500 rounded-t absolute bottom-6"
-                          style={{ height: `${analyticsData.applications[index] * 3}px` }}
-                        ></div>
-                        <div className="text-xs text-gray-500 mt-1">{analyticsData.periods[index]}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-center gap-6 mt-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-blue-100 rounded"></div>
-                      <span className="text-sm text-gray-600">Просмотры</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                      <span className="text-sm text-gray-600">Отклики</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 shadow-sm">
-                <CardHeader>
-                  <CardTitle>Популярные запросы</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {analyticsData.topSearches.map((search, index) => (
-                      <div key={index} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-xs text-blue-800 font-medium">
-                            {index + 1}
-                          </div>
-                          <span className="text-gray-700">{search.term}</span>
-                        </div>
-                        <span className="text-gray-500 text-sm">{search.count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-                <CardFooter className="border-t pt-4">
-                  <Button variant="outline" className="w-full">
-                    <FileText className="h-4 w-4 mr-2" />
-                    Полный отчет
-                  </Button>
-                </CardFooter>
-              </Card>
-            </div>
-
-            {/* Эффективность вакансий */}
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold mb-4">Эффективность вакансий</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="text-left p-3 text-gray-600 font-medium">Вакансия</th>
-                      <th className="text-center p-3 text-gray-600 font-medium">Просмотры</th>
-                      <th className="text-center p-3 text-gray-600 font-medium">Отклики</th>
-                      <th className="text-center p-3 text-gray-600 font-medium">Конверсия</th>
-                      <th className="text-center p-3 text-gray-600 font-medium">Статус</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {jobs.map((job) => (
-                      <tr key={job.id} className="border-b hover:bg-gray-50">
-                        <td className="p-3">
-                          <Link href={`/job/${job.id}`} className="font-medium text-gray-900 hover:text-blue-600">
-                            {job.title}
-                          </Link>
-                        </td>
-                        <td className="p-3 text-center">{job.views}</td>
-                        <td className="p-3 text-center">{job.applications}</td>
-                        <td className="p-3 text-center">{Math.round((job.applications / job.views) * 100)}%</td>
-                        <td className="p-3 text-center">
-                          <Badge
-                            className={
-                              job.status === "active" ? "bg-green-100 text-green-800" : "bg-orange-100 text-orange-800"
-                            }
-                          >
-                            {job.status === "active" ? "Активна" : "На модерации"}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Рекомендации */}
-            <Card className="border-0 shadow-sm mt-6">
-              <CardHeader>
-                <CardTitle>Рекомендации по улучшению</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                    <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-blue-800">Улучшите описание вакансии</h4>
-                      <p className="text-sm text-blue-700 mt-1">
-                        Добавьте больше деталейй о требуемых навыках и обязанностях в вакансию "Охранник 6 разряд" для
-                        повышения конверсии.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
-                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="font-medium text-green-800">Хорошая конверсия</h4>
-                      <p className="text-sm text-green-700 mt-1">
-                        Вакансия "Охранник в бизнес-центр" показывает высокую конверсию в 12.5%. Продолжайте
-                        использовать этот формат.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Вкладка для охранников - мои отклики */}
-          <TabsContent value="my-applications" className="space-y-6">
-            <div className="flex flex-col lg:flex-row gap-6">
-              {/* Фильтры */}
-              <div className="w-full lg:w-72 flex-shrink-0 space-y-4">
-                <Card className="border-0 shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="space-y-4">
-                      <div>
-                        <h3 className="font-medium mb-2">Статус отклика</h3>
-                        <div className="space-y-2">
-                          <div className="flex items-center space-x-2">
-                            <Checkbox id="all-statuses" defaultChecked />
-                            <Label htmlFor="all-statuses" className="text-sm">
-                              Все статусы
-                            </Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox id="reviewing" />
-                            <Label htmlFor="reviewing" className="text-sm">
-                              На рассмотрении
-                            </Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox id="invited" />
-                            <Label htmlFor="invited" className="text-sm">
-                              Приглашения
-                            </Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Checkbox id="rejected" />
-                            <Label htmlFor="rejected" className="text-sm">
-                              Отказы
-                            </Label>
-                          </div>
-                        </div>
-                      </div>
-
-                      <Separator />
-
-                      <div>
-                        <h3 className="font-medium mb-2">Период</h3>
-                        <RadioGroup defaultValue="all">
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="all" id="period-all" />
-                            <Label htmlFor="period-all" className="text-sm">
-                              За все время
-                            </Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="week" id="period-week" />
-                            <Label htmlFor="period-week" className="text-sm">
-                              За неделю
-                            </Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="month" id="period-month" />
-                            <Label htmlFor="period-month" className="text-sm">
-                              За месяц
-                            </Label>
-                          </div>
-                        </RadioGroup>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Список откликов */}
-              <div className="flex-1">
-                <div className="mb-4 flex justify-between items-center">
-                  <h2 className="text-lg font-semibold">Мои отклики ({myApplications.length})</h2>
-                  <div className="flex gap-2">
-                    <Select defaultValue="date">
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Сортировка" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="date">По дате (сначала новые)</SelectItem>
-                        <SelectItem value="status">По статусу</SelectItem>
-                        <SelectItem value="company">По компании</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  {myApplications.map((application) => (
-                    <Card key={application.id} className="overflow-hidden border border-gray-200 shadow-sm">
-                      <CardContent className="p-0">
-                        <div className="p-4">
+                        <div className="flex-1">
                           <div className="flex justify-between items-start">
                             <div>
-                              <Link
-                                href={`/job/${application.jobId}`}
-                                className="text-lg font-semibold hover:text-blue-600 transition-colors"
-                              >
-                                {application.jobTitle}
-                              </Link>
-                              <div className="text-sm text-gray-600 mt-1">
-                                <Link href={`/chop/1`} className="hover:text-blue-600">
-                                  {application.company}
-                                </Link>{" "}
-                                • {application.location}
+                              <h3 className="text-lg font-semibold text-gray-900">{resume.name}</h3>
+                              <div className="text-gray-600">{resume.position}</div>
+                              <div className="text-sm text-gray-500 flex items-center gap-4 mt-1">
+                                <span>Опыт: {resume.experience} лет</span>
+                                <span className="flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {resume.location}
+                                </span>
+                                <span>Зарплата: {resume.salary}</span>
                               </div>
-                              <div className="text-sm text-gray-500 mt-1">Отклик от {application.appliedDate}</div>
                             </div>
-                            <Badge className={application.statusClass}>{application.statusText}</Badge>
+                            <div className="flex flex-col items-end gap-2">
+                              <div className="flex items-center gap-1">
+                                <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                                <span className="text-sm font-medium">{resume.rating}</span>
+                              </div>
+                              {resume.verified && <CheckCircle className="h-4 w-4 text-blue-500" />}
+                            </div>
                           </div>
 
-                          {application.message && (
-                            <Alert className="mt-3 bg-gray-50">
-                              <AlertDescription>
-                                {application.hasNewMessages && (
-                                  <Badge className="mb-2 bg-blue-100 text-blue-800">Новое сообщение</Badge>
-                                )}
-                                <p className="text-sm">{application.message}</p>
-                              </AlertDescription>
-                            </Alert>
-                          )}
-                        </div>
-
-                        <div className="border-t p-3 bg-gray-50 flex justify-between items-center">
-                          <div className="text-sm text-gray-500">
-                            {application.status === "reviewing" ? (
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-4 w-4" />
-                                Ожидает ответа
-                              </span>
-                            ) : application.status === "invited" ? (
-                              <span className="flex items-center gap-1 text-green-600">
-                                <Calendar className="h-4 w-4" />
-                                Требуется ваш ответ
-                              </span>
-                            ) : (
-                              <span className="flex items-center gap-1">
-                                <CheckSquare className="h-4 w-4" />
-                                Рассмотрено
-                              </span>
-                            )}
+                          <div className="mt-3">
+                            <p className="text-sm text-gray-700">{resume.description}</p>
                           </div>
-                          <div className="flex gap-2">
-                            <Button variant="outline" size="sm">
-                              <MessageCircle className="h-4 w-4 mr-1" />
-                              Сообщение
-                            </Button>
-                            {application.status === "reviewing" && (
-                              <Button variant="outline" size="sm" className="text-red-600">
-                                Отозвать
-                              </Button>
-                            )}
-                            {application.status === "invited" && (
-                              <Button size="sm" className="bg-green-600 hover:bg-green-700">
-                                Принять
-                              </Button>
-                            )}
+
+                          <div className="flex flex-wrap gap-2 mt-3">
+                            {resume.skills.map((skill, index) => (
+                              <Badge key={index} variant="outline" className="bg-gray-50">
+                                {skill}
+                              </Badge>
+                            ))}
                           </div>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                      </div>
+                    </div>
 
-                  {myApplications.length === 0 && (
-                    <Card className="border-dashed border-2 p-8 text-center">
-                      <CardContent>
-                        <div className="flex flex-col items-center justify-center space-y-3">
-                          <Briefcase className="h-12 w-12 text-gray-400" />
-                          <h3 className="text-lg font-medium">У вас пока нет откликов</h3>
-                          <p className="text-gray-500 max-w-md">
-                            Найдите интересные вакансии и откликнитесь на них, чтобы они появились здесь
-                          </p>
-                          <Button className="mt-2 bg-blue-600 hover:bg-blue-700">Найти вакансии</Button>
+                    <div className="border-t p-3 bg-gray-50 flex flex-wrap justify-between items-center gap-2">
+                      <div className="text-sm text-gray-500">
+                        Последняя активность: {resume.lastActivity} • {resume.recommendations} рекомендаций
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4 mr-1" />
+                          Просмотреть
+                        </Button>
+                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                          <MessageCircle className="h-4 w-4 mr-1" />
+                          Связаться
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
+
+          {/* Вкладка для ЧОПов - аналитика */}
+          <TabsContent value="analytics" className="space-y-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold">Аналитика</h2>
+              <p className="text-gray-600">Статистика по вашим вакансиям и откликам</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Всего просмотров</p>
+                      <p className="text-2xl font-bold">1,847</p>
+                    </div>
+                    <Eye className="h-8 w-8 text-blue-500" />
+                  </div>
+                  <div className="mt-2 text-sm text-green-600">+12% за неделю</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Всего откликов</p>
+                      <p className="text-2xl font-bold">231</p>
+                    </div>
+                    <UserPlus className="h-8 w-8 text-green-500" />
+                  </div>
+                  <div className="mt-2 text-sm text-green-600">+8% за неделю</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Конверсия</p>
+                      <p className="text-2xl font-bold">{analyticsData.conversionRate}%</p>
+                    </div>
+                    <BarChart3 className="h-8 w-8 text-purple-500" />
+                  </div>
+                  <div className="mt-2 text-sm text-green-600">+2.1% за неделю</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Время отклика</p>
+                      <p className="text-2xl font-bold">{analyticsData.averageResponseTime}</p>
+                    </div>
+                    <Clock className="h-8 w-8 text-orange-500" />
+                  </div>
+                  <div className="mt-2 text-sm text-red-600">+1ч за неделю</div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Популярные поисковые запросы</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {analyticsData.topSearches.map((search, index) => (
+                      <div key={index} className="flex justify-between items-center">
+                        <span className="text-sm">{search.term}</span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-20 bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-blue-600 h-2 rounded-full"
+                              style={{ width: `${(search.count / 245) * 100}%` }}
+                            ></div>
+                          </div>
+                          <span className="text-sm text-gray-600 w-8">{search.count}</span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Активные вакансии</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {jobs
+                      .filter((job) => job.status === "active")
+                      .map((job) => (
+                        <div key={job.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                          <div>
+                            <div className="font-medium text-sm">{job.title}</div>
+                            <div className="text-xs text-gray-500">{job.postedAt}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium">{job.views} просмотров</div>
+                            <div className="text-xs text-gray-500">{job.applications} откликов</div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          {/* Вкладка для модераторов - модерация */}
+          <TabsContent value="moderation" className="space-y-6">
+            <div className="mb-6">
+              <h2 className="text-xl font-bold">Модерация</h2>
+              <p className="text-gray-600">Проверка и одобрение вакансий и резюме</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">На модерации</p>
+                      <p className="text-2xl font-bold">5</p>
+                    </div>
+                    <AlertCircle className="h-8 w-8 text-orange-500" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Одобрено сегодня</p>
+                      <p className="text-2xl font-bold">12</p>
+                    </div>
+                    <CheckCircle className="h-8 w-8 text-green-500" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600">Отклонено сегодня</p>
+                      <p className="text-2xl font-bold">3</p>
+                    </div>
+                    <XCircle className="h-8 w-8 text-red-500" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="space-y-4">
+              {moderationItems.map((item) => (
+                <Card key={item.id} className="overflow-hidden border border-gray-200 shadow-sm">
+                  <CardContent className="p-0">
+                    <div className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="bg-gray-50">
+                              {item.type === "job" ? "Вакансия" : "Резюме"}
+                            </Badge>
+                            <Badge
+                              className={
+                                item.priority === "high"
+                                  ? "bg-red-100 text-red-800"
+                                  : item.priority === "medium"
+                                    ? "bg-orange-100 text-orange-800"
+                                    : "bg-gray-100 text-gray-800"
+                              }
+                            >
+                              {item.priority === "high" ? "Высокий" : item.priority === "medium" ? "Средний" : "Низкий"}
+                            </Badge>
+                          </div>
+                          <h3 className="text-lg font-semibold mt-2">{item.title}</h3>
+                          {item.company && <div className="text-gray-600">{item.company}</div>}
+                          {item.position && <div className="text-gray-600">{item.position}</div>}
+                          <div className="text-sm text-gray-500 mt-1">Отправлено: {item.submittedDate}</div>
+                        </div>
+                        <Badge className="bg-orange-100 text-orange-800">На модерации</Badge>
+                      </div>
+
+                      {item.issues.length > 0 && (
+                        <div className="mt-4">
+                          <h4 className="text-sm font-medium text-red-600 mb-2">Обнаруженные проблемы:</h4>
+                          <ul className="list-disc list-inside text-sm text-red-600 space-y-1">
+                            {item.issues.map((issue, index) => (
+                              <li key={index}>{issue}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border-t p-3 bg-gray-50 flex flex-wrap justify-between items-center gap-2">
+                      <div className="text-sm text-gray-500">
+                        Приоритет:{" "}
+                        {item.priority === "high" ? "Высокий" : item.priority === "medium" ? "Средний" : "Низкий"}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm">
+                          <Eye className="h-4 w-4 mr-1" />
+                          Просмотреть
+                        </Button>
+                        <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          Одобрить
+                        </Button>
+                        <Button variant="outline" size="sm" className="text-red-600">
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Отклонить
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </TabsContent>
         </Tabs>
