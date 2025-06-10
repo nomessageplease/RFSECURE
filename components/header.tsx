@@ -28,7 +28,7 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
-  const { user, profile, signOut } = useAuth()
+  const { user, profile, signOut, loading } = useAuth()
 
   useEffect(() => {
     setMounted(true)
