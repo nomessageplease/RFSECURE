@@ -2,83 +2,47 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
 export async function middleware(request: NextRequest) {
-  console.log("Middleware: Обработка запроса:", request.nextUrl.pathname)
-
-  // Create a response object that we can modify
-  const response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
+  let supabaseResponse = NextResponse.next({
+    request,
   })
 
-  try {
-    // Create a Supabase client configured for middleware usage
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return request.cookies.get(name)?.value
-          },
-          set(name: string, value: string, options: any) {
-            // This is the important part - we need to set cookies on the response
-            response.cookies.set({
-              name,
-              value,
-              ...options,
-            })
-          },
-          remove(name: string, options: any) {
-            // Also handle cookie removal properly
-            response.cookies.delete({
-              name,
-              ...options,
-            })
-          },
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({
+            request,
+          })
+          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
         },
       },
-    )
+    },
+  )
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-    console.log("Middleware: Пользователь:", user?.id || "не авторизован")
-
-    // Защищенные маршруты, требующие авторизации
-    const protectedRoutes = ["/profile", "/admin", "/jobs/create", "/reviews/create", "/complaints/create"]
-
-    // Маршруты только для админов и модераторов
-    const adminRoutes = ["/admin"]
-
-    // Проверяем, требует ли маршрут авторизации
-    const isProtectedRoute = protectedRoutes.some((route) => request.nextUrl.pathname.startsWith(route))
-
-    // Если маршрут защищен и пользователь не авторизован
-    if (isProtectedRoute && !user) {
-      console.log("Middleware: Перенаправление на страницу входа")
-      const redirectUrl = new URL("/auth/sign-in", request.url)
-      redirectUrl.searchParams.set("redirectTo", request.nextUrl.pathname)
-      return NextResponse.redirect(redirectUrl)
-    }
-
-    // Проверяем доступ к админ-панели
-    if (adminRoutes.some((route) => request.nextUrl.pathname.startsWith(route)) && user) {
-      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
-
-      if (!profile || !["admin", "moderator"].includes(profile.role)) {
-        console.log("Middleware: Нет доступа к админ-панели")
-        return NextResponse.redirect(new URL("/", request.url))
-      }
-    }
-
-    return response
-  } catch (error) {
-    console.error("Middleware: Ошибка:", error)
-    // В случае ошибки, продолжаем без проверки авторизации
-    return response
+  if (!user && request.nextUrl.pathname.startsWith("/admin")) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = "/auth/sign-in"
+    redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname)
+    return NextResponse.redirect(redirectUrl)
   }
+
+  if (user && request.nextUrl.pathname.startsWith("/auth")) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = "/"
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  return supabaseResponse
 }
 
 export const config = {

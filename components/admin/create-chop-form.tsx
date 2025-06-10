@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,8 +11,25 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Building2, AlertCircle, CheckCircle, Loader2, Search } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
+interface FormData {
+  inn: string
+  website: string
+  name: string
+  description: string
+  address: string
+  phone: string
+  email: string
+  license: string
+  employees: string
+}
+
+interface Message {
+  type: "success" | "error"
+  text: string
+}
+
 export function CreateChopForm() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     inn: "",
     website: "",
     name: "",
@@ -25,14 +41,13 @@ export function CreateChopForm() {
     employees: "",
   })
   const [loading, setLoading] = useState(false)
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const [message, setMessage] = useState<Message | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [showOptionalFields, setShowOptionalFields] = useState(false)
   const [fetchingData, setFetchingData] = useState(false)
   const [innError, setInnError] = useState<string | null>(null)
-  const [debugInfo, setDebugInfo] = useState<any>(null)
 
   const supabase = createClient()
 
@@ -40,8 +55,6 @@ export function CreateChopForm() {
     try {
       const file = e.target.files?.[0]
       if (file) {
-        console.log("Выбран файл:", file.name, file.size, file.type)
-
         if (file.size > 5 * 1024 * 1024) {
           setMessage({
             type: "error",
@@ -63,8 +76,7 @@ export function CreateChopForm() {
         reader.onload = (e) => {
           setLogoPreview(e.target?.result as string)
         }
-        reader.onerror = (error) => {
-          console.error("Ошибка чтения файла:", error)
+        reader.onerror = () => {
           setMessage({
             type: "error",
             text: "Ошибка при чтении файла",
@@ -74,7 +86,6 @@ export function CreateChopForm() {
         setMessage(null)
       }
     } catch (error) {
-      console.error("Ошибка в handleLogoChange:", error)
       setMessage({
         type: "error",
         text: "Ошибка при обработке файла",
@@ -88,43 +99,33 @@ export function CreateChopForm() {
       setFormData({ ...formData, inn: value })
       setInnError(null)
     } catch (error) {
-      console.error("Ошибка в handleInnChange:", error)
+      // Handle error silently
     }
   }
 
-  const checkInnExists = async (inn: string) => {
+  const checkInnExists = async (inn: string): Promise<boolean> => {
     try {
-      console.log("Проверяем существование ИНН:", inn)
       const { data, error } = await supabase.from("chops").select("id, inn, name").eq("inn", inn)
 
-      console.log("Результат проверки ИНН:", { data, error })
-
       if (error) {
-        console.error("Ошибка при проверке ИНН:", error)
         return false
       }
 
       return data && data.length > 0
     } catch (error) {
-      console.error("Исключение при проверке ИНН:", error)
       return false
     }
   }
 
   const uploadLogo = async (file: File): Promise<string> => {
     try {
-      console.log("Начинаем загрузку логотипа:", file.name, file.size)
-
       const formData = new FormData()
       formData.append("file", file)
 
-      console.log("Отправляем запрос на /api/upload-logo")
       const response = await fetch("/api/upload-logo", {
         method: "POST",
         body: formData,
       })
-
-      console.log("Получен ответ:", response.status, response.statusText)
 
       if (!response.ok) {
         let errorText = "Неизвестная ошибка"
@@ -134,15 +135,12 @@ export function CreateChopForm() {
         } catch {
           errorText = await response.text()
         }
-        console.error("Ошибка загрузки логотипа:", errorText)
         throw new Error(`Ошибка загрузки файла: ${errorText}`)
       }
 
       const data = await response.json()
-      console.log("Логотип загружен успешно:", data)
       return data.url
     } catch (error) {
-      console.error("Ошибка загрузки логотипа:", error)
       throw error
     }
   }
@@ -153,8 +151,6 @@ export function CreateChopForm() {
     setInnError(null)
 
     try {
-      console.log("Начинаем проверку ИНН:", formData.inn)
-
       if (formData.inn.length !== 10 && formData.inn.length !== 12) {
         setInnError("ИНН должен содержать 10 или 12 цифр")
         return
@@ -172,7 +168,6 @@ export function CreateChopForm() {
         text: "ИНН проверен, можно заполнять дополнительные поля.",
       })
     } catch (error) {
-      console.error("Ошибка при проверке ИНН:", error)
       setMessage({
         type: "error",
         text: `Произошла ошибка при проверке ИНН: ${error instanceof Error ? error.message : "Неизвестная ошибка"}`,
@@ -186,21 +181,14 @@ export function CreateChopForm() {
     e.preventDefault()
     setLoading(true)
     setMessage(null)
-    setDebugInfo(null)
 
     try {
-      console.log("=== НАЧАЛО СОЗДАНИЯ ЧОПа ===")
-      console.log("Данные формы:", formData)
-
-      // Проверка ИНН
       if (!formData.inn || (formData.inn.length !== 10 && formData.inn.length !== 12)) {
         setInnError("ИНН должен содержать 10 или 12 цифр")
         setLoading(false)
         return
       }
 
-      // Проверка существования ЧОПа с таким ИНН
-      console.log("Проверяем существование ЧОПа...")
       const exists = await checkInnExists(formData.inn)
       if (exists) {
         setInnError("ЧОП с таким ИНН уже зарегистрирован в системе.")
@@ -208,17 +196,12 @@ export function CreateChopForm() {
         return
       }
 
-      // Получаем текущего пользователя
-      console.log("Получаем текущего пользователя...")
       const {
         data: { user },
         error: userError,
       } = await supabase.auth.getUser()
 
-      console.log("Результат получения пользователя:", { user: user?.id, error: userError })
-
       if (userError) {
-        console.error("Ошибка получения пользователя:", userError)
         throw new Error(`Ошибка аутентификации: ${userError.message}`)
       }
 
@@ -226,16 +209,12 @@ export function CreateChopForm() {
         throw new Error("Пользователь не авторизован")
       }
 
-      // Загружаем логотип, если он выбран
       let logoUrl = ""
       if (logoFile) {
-        console.log("Загружаем логотип...")
         setUploadingLogo(true)
         try {
           logoUrl = await uploadLogo(logoFile)
-          console.log("Логотип загружен:", logoUrl)
         } catch (error) {
-          console.error("Ошибка загрузки логотипа:", error)
           throw new Error(
             `Ошибка при загрузке логотипа: ${error instanceof Error ? error.message : "Неизвестная ошибка"}`,
           )
@@ -244,7 +223,6 @@ export function CreateChopForm() {
         }
       }
 
-      // Подготавливаем данные для вставки
       const insertData = {
         inn: formData.inn,
         name: formData.name || null,
@@ -262,53 +240,21 @@ export function CreateChopForm() {
         created_by: user.id,
       }
 
-      console.log("Данные для вставки:", insertData)
-
-      // Создаем ЧОП в базе данных
-      console.log("Отправляем данные в Supabase...")
       const { data, error } = await supabase.from("chops").insert(insertData).select()
 
-      console.log("Результат вставки:", { data, error })
-
       if (error) {
-        console.error("Ошибка Supabase:", error)
-        setDebugInfo({
-          error: error,
-          insertData: insertData,
-          user: user,
-        })
         throw new Error(`Ошибка базы данных: ${error.message} (код: ${error.code})`)
       }
 
       if (!data || data.length === 0) {
-        console.error("Данные не вернулись после вставки")
         throw new Error("ЧОП не был создан - нет данных в ответе")
       }
-
-      console.log("ЧОП создан успешно:", data[0])
-
-      // Проверяем, что ЧОП действительно создался
-      console.log("Проверяем созданный ЧОП...")
-      const { data: verifyData, error: verifyError } = await supabase
-        .from("chops")
-        .select("*")
-        .eq("id", data[0].id)
-        .single()
-
-      console.log("Проверка созданного ЧОПа:", { verifyData, verifyError })
 
       setMessage({
         type: "success",
         text: `ЧОП "${formData.name || formData.inn}" успешно создан! ID: ${data[0].id}`,
       })
 
-      setDebugInfo({
-        success: true,
-        createdChop: data[0],
-        verification: verifyData,
-      })
-
-      // Очищаем форму
       setFormData({
         inn: "",
         website: "",
@@ -323,22 +269,10 @@ export function CreateChopForm() {
       setShowOptionalFields(false)
       setLogoFile(null)
       setLogoPreview(null)
-
-      console.log("=== КОНЕЦ СОЗДАНИЯ ЧОПа ===")
-    } catch (error: any) {
-      console.error("Полная ошибка создания ЧОПа:", error)
-      console.error("Stack trace:", error.stack)
-
+    } catch (error: unknown) {
       setMessage({
         type: "error",
-        text: error.message || "Произошла неожиданная ошибка при создании ЧОПа",
-      })
-
-      setDebugInfo({
-        error: error.message,
-        stack: error.stack,
-        name: error.name,
-        cause: error.cause,
+        text: error instanceof Error ? error.message : "Произошла неожиданная ошибка при создании ЧОПа",
       })
     } finally {
       setLoading(false)
@@ -355,7 +289,6 @@ export function CreateChopForm() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Основные поля */}
           <div className="space-y-4 p-4 bg-blue-50 rounded-lg">
             <h3 className="font-medium text-blue-900">Основные поля</h3>
 
@@ -451,7 +384,6 @@ export function CreateChopForm() {
             </div>
           </div>
 
-          {/* Кнопка для показа дополнительных полей */}
           <Button
             type="button"
             variant="outline"
@@ -462,7 +394,6 @@ export function CreateChopForm() {
             {showOptionalFields ? "Скрыть дополнительные поля" : "+ Добавить дополнительные поля"}
           </Button>
 
-          {/* Опциональные поля */}
           {showOptionalFields && (
             <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
               <h3 className="font-medium text-gray-900">Дополнительные поля</h3>
@@ -565,22 +496,6 @@ export function CreateChopForm() {
               )}
               <AlertDescription className={message.type === "error" ? "text-red-800" : "text-green-800"}>
                 {message.text}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Отладочная информация */}
-          {debugInfo && (
-            <Alert className="border-blue-200 bg-blue-50">
-              <AlertDescription className="text-blue-800">
-                <details>
-                  <summary className="cursor-pointer font-medium">
-                    Отладочная информация (нажмите для просмотра)
-                  </summary>
-                  <pre className="mt-2 text-xs overflow-auto max-h-64 bg-white p-2 rounded border">
-                    {JSON.stringify(debugInfo, null, 2)}
-                  </pre>
-                </details>
               </AlertDescription>
             </Alert>
           )}

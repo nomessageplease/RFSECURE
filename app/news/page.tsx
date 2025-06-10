@@ -20,6 +20,8 @@ import {
   XCircle,
   Settings,
   BarChart3,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -35,14 +37,28 @@ import { useToast } from "@/hooks/use-toast"
 import Header from "@/components/header"
 import type { News } from "@/lib/supabase/types"
 
-const newsCategories = [
-  { id: "all", name: "Все новости" },
-  { id: "industry", name: "Отрасль" },
-  { id: "legislation", name: "Законодательство" },
-  { id: "technology", name: "Технологии" },
-  { id: "companies", name: "Компании" },
-  { id: "general", name: "Общие" },
-]
+interface NewsCategory {
+  id: string
+  name: string
+  description?: string
+  color?: string
+  icon?: string
+  sort_order: number
+  is_active: boolean
+}
+
+interface NewsStats {
+  totalNews: number
+  publishedNews: number
+  draftNews: number
+  totalViews: number
+  totalComments: number
+  totalLikes: number
+  categoryCounts: Record<string, number>
+  topNews: Array<{ id: string; title: string; views: number; created_at: string }>
+  recentNews: number
+  engagement: number
+}
 
 interface NewsFormData {
   title: string
@@ -55,15 +71,27 @@ interface NewsFormData {
   status: "draft" | "published"
 }
 
+interface CategoryFormData {
+  id: string
+  name: string
+  description: string
+  color: string
+  sort_order: number
+}
+
 export default function NewsPage() {
   const { userRole } = useUserRole()
   const { toast } = useToast()
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [news, setNews] = useState<News[]>([])
+  const [categories, setCategories] = useState<NewsCategory[]>([])
+  const [stats, setStats] = useState<NewsStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [editingNews, setEditingNews] = useState<News | null>(null)
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false)
+  const [editingCategory, setEditingCategory] = useState<NewsCategory | null>(null)
   const [formData, setFormData] = useState<NewsFormData>({
     title: "",
     excerpt: "",
@@ -74,10 +102,21 @@ export default function NewsPage() {
     featured: false,
     status: "draft",
   })
+  const [categoryFormData, setCategoryFormData] = useState<CategoryFormData>({
+    id: "",
+    name: "",
+    description: "",
+    color: "#6B7280",
+    sort_order: 0,
+  })
 
   useEffect(() => {
     fetchNews()
-  }, [selectedCategory])
+    fetchCategories()
+    if (userRole === "admin" || userRole === "moderator") {
+      fetchStats()
+    }
+  }, [selectedCategory, userRole])
 
   const fetchNews = async () => {
     try {
@@ -111,6 +150,32 @@ export default function NewsPage() {
     }
   }
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/news-categories")
+      const result = await response.json()
+
+      if (response.ok) {
+        setCategories(result.data || [])
+      }
+    } catch (error) {
+      console.error("Error fetching categories:", error)
+    }
+  }
+
+  const fetchStats = async () => {
+    try {
+      const response = await fetch("/api/news-stats")
+      const result = await response.json()
+
+      if (response.ok) {
+        setStats(result.data)
+      }
+    } catch (error) {
+      console.error("Error fetching stats:", error)
+    }
+  }
+
   const handleCreateNews = async () => {
     try {
       const response = await fetch("/api/news", {
@@ -133,6 +198,9 @@ export default function NewsPage() {
         setIsCreateDialogOpen(false)
         resetForm()
         fetchNews()
+        if (userRole === "admin" || userRole === "moderator") {
+          fetchStats()
+        }
       } else {
         const error = await response.json()
         toast({
@@ -174,6 +242,9 @@ export default function NewsPage() {
         setEditingNews(null)
         resetForm()
         fetchNews()
+        if (userRole === "admin" || userRole === "moderator") {
+          fetchStats()
+        }
       } else {
         const error = await response.json()
         toast({
@@ -206,6 +277,9 @@ export default function NewsPage() {
           description: "Новость удалена",
         })
         fetchNews()
+        if (userRole === "admin" || userRole === "moderator") {
+          fetchStats()
+        }
       } else {
         const error = await response.json()
         toast({
@@ -224,6 +298,147 @@ export default function NewsPage() {
     }
   }
 
+  const handleCreateCategory = async () => {
+    try {
+      const response = await fetch("/api/news-categories", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(categoryFormData),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Успех",
+          description: "Категория создана",
+        })
+        setIsCategoryDialogOpen(false)
+        resetCategoryForm()
+        fetchCategories()
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Ошибка",
+          description: error.error || "Не удалось создать категорию",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error creating category:", error)
+      toast({
+        title: "Ошибка",
+        description: "Не удалось создать категорию",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleUpdateCategory = async () => {
+    if (!editingCategory) return
+
+    try {
+      const response = await fetch(`/api/news-categories/${editingCategory.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(categoryFormData),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Успех",
+          description: "Категория обновлена",
+        })
+        setEditingCategory(null)
+        resetCategoryForm()
+        fetchCategories()
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Ошибка",
+          description: error.error || "Не удалось обновить категорию",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error updating category:", error)
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить категорию",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    if (!confirm("Вы уверены, что хотите удалить эту категорию?")) return
+
+    try {
+      const response = await fetch(`/api/news-categories/${categoryId}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Успех",
+          description: "Категория удалена",
+        })
+        fetchCategories()
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Ошибка",
+          description: error.error || "Не удалось удалить категорию",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error deleting category:", error)
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить категорию",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const moveCategoryUp = async (category: NewsCategory) => {
+    const newOrder = category.sort_order - 1
+    if (newOrder < 0) return
+
+    try {
+      await fetch(`/api/news-categories/${category.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ...category, sort_order: newOrder }),
+      })
+      fetchCategories()
+    } catch (error) {
+      console.error("Error moving category:", error)
+    }
+  }
+
+  const moveCategoryDown = async (category: NewsCategory) => {
+    const newOrder = category.sort_order + 1
+
+    try {
+      await fetch(`/api/news-categories/${category.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ...category, sort_order: newOrder }),
+      })
+      fetchCategories()
+    } catch (error) {
+      console.error("Error moving category:", error)
+    }
+  }
+
   const resetForm = () => {
     setFormData({
       title: "",
@@ -234,6 +449,16 @@ export default function NewsPage() {
       tags: [],
       featured: false,
       status: "draft",
+    })
+  }
+
+  const resetCategoryForm = () => {
+    setCategoryFormData({
+      id: "",
+      name: "",
+      description: "",
+      color: "#6B7280",
+      sort_order: 0,
     })
   }
 
@@ -248,6 +473,17 @@ export default function NewsPage() {
       tags: newsItem.tags || [],
       featured: newsItem.featured,
       status: newsItem.status,
+    })
+  }
+
+  const openEditCategoryDialog = (category: NewsCategory) => {
+    setEditingCategory(category)
+    setCategoryFormData({
+      id: category.id,
+      name: category.name,
+      description: category.description || "",
+      color: category.color || "#6B7280",
+      sort_order: category.sort_order,
     })
   }
 
@@ -422,7 +658,7 @@ export default function NewsPage() {
                         <SelectValue placeholder="Выберите категорию" />
                       </SelectTrigger>
                       <SelectContent>
-                        {newsCategories.slice(1).map((category) => (
+                        {categories.map((category) => (
                           <SelectItem key={category.id} value={category.id}>
                             {category.name}
                           </SelectItem>
@@ -529,7 +765,7 @@ export default function NewsPage() {
                         <SelectValue placeholder="Выберите категорию" />
                       </SelectTrigger>
                       <SelectContent>
-                        {newsCategories.slice(1).map((category) => (
+                        {categories.map((category) => (
                           <SelectItem key={category.id} value={category.id}>
                             {category.name}
                           </SelectItem>
@@ -817,7 +1053,8 @@ export default function NewsPage() {
                       <SelectValue placeholder="Категория" />
                     </SelectTrigger>
                     <SelectContent>
-                      {newsCategories.map((category) => (
+                      <SelectItem value="all">Все новости</SelectItem>
+                      {categories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
                           {category.name}
                         </SelectItem>
@@ -851,7 +1088,7 @@ export default function NewsPage() {
                                   <div className="flex items-center gap-2 mb-3">
                                     <Badge className="bg-red-100 text-red-800 border-0">Главная новость</Badge>
                                     <Badge variant="outline">
-                                      {newsCategories.find((cat) => cat.id === newsItem.category)?.name}
+                                      {categories.find((cat) => cat.id === newsItem.category)?.name}
                                     </Badge>
                                     {(userRole === "moderator" || userRole === "admin") && (
                                       <Badge
@@ -927,7 +1164,7 @@ export default function NewsPage() {
                             <div className="md:w-3/4 p-4">
                               <div className="flex items-center gap-2 mb-2">
                                 <Badge variant="outline">
-                                  {newsCategories.find((cat) => cat.id === newsItem.category)?.name}
+                                  {categories.find((cat) => cat.id === newsItem.category)?.name}
                                 </Badge>
                                 {(userRole === "moderator" || userRole === "admin") && (
                                   <Badge
@@ -997,7 +1234,7 @@ export default function NewsPage() {
                             <TrendingUp className="h-4 w-4 text-red-500" />
                             <Badge className="bg-red-100 text-red-800 border-0">Рекомендуем</Badge>
                             <Badge variant="outline">
-                              {newsCategories.find((cat) => cat.id === newsItem.category)?.name}
+                              {categories.find((cat) => cat.id === newsItem.category)?.name}
                             </Badge>
                           </div>
                           <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-3">
@@ -1037,7 +1274,7 @@ export default function NewsPage() {
                             <TrendingUp className="h-4 w-4 text-orange-500" />
                             <Badge className="bg-orange-100 text-orange-800 border-0">Популярно</Badge>
                             <Badge variant="outline">
-                              {newsCategories.find((cat) => cat.id === newsItem.category)?.name}
+                              {categories.find((cat) => cat.id === newsItem.category)?.name}
                             </Badge>
                           </div>
                           <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors mb-3">
@@ -1132,37 +1369,83 @@ export default function NewsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <Card className="border-0 shadow-sm">
                       <CardContent className="p-6 text-center">
-                        <div className="text-2xl font-bold text-gray-900">{news.length}</div>
+                        <div className="text-2xl font-bold text-gray-900">{stats?.totalNews || 0}</div>
                         <div className="text-sm text-gray-600">Всего новостей</div>
-                        <div className="text-xs text-green-600 mt-1">+12% за месяц</div>
+                        <div className="text-xs text-green-600 mt-1">+{stats?.recentNews || 0} за месяц</div>
                       </CardContent>
                     </Card>
                     <Card className="border-0 shadow-sm">
                       <CardContent className="p-6 text-center">
-                        <div className="text-2xl font-bold text-gray-900">
-                          {news.reduce((sum, item) => sum + item.views, 0)}
-                        </div>
+                        <div className="text-2xl font-bold text-gray-900">{stats?.totalViews || 0}</div>
                         <div className="text-sm text-gray-600">Просмотров</div>
                         <div className="text-xs text-green-600 mt-1">+18% за месяц</div>
                       </CardContent>
                     </Card>
                     <Card className="border-0 shadow-sm">
                       <CardContent className="p-6 text-center">
-                        <div className="text-2xl font-bold text-gray-900">
-                          {news.reduce((sum, item) => sum + item.comments_count, 0)}
-                        </div>
+                        <div className="text-2xl font-bold text-gray-900">{stats?.totalComments || 0}</div>
                         <div className="text-sm text-gray-600">Комментариев</div>
                         <div className="text-xs text-green-600 mt-1">+8% за месяц</div>
                       </CardContent>
                     </Card>
                     <Card className="border-0 shadow-sm">
                       <CardContent className="p-6 text-center">
-                        <div className="text-2xl font-bold text-gray-900">89%</div>
+                        <div className="text-2xl font-bold text-gray-900">{stats?.engagement || 0}%</div>
                         <div className="text-sm text-gray-600">Вовлеченность</div>
                         <div className="text-xs text-green-600 mt-1">+2% за месяц</div>
                       </CardContent>
                     </Card>
                   </div>
+
+                  {/* Топ новости */}
+                  {stats?.topNews && stats.topNews.length > 0 && (
+                    <Card className="border-0 shadow-sm">
+                      <CardHeader>
+                        <CardTitle>Топ новости по просмотрам</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {stats.topNews.map((item, index) => (
+                            <div key={item.id} className="flex items-center gap-4">
+                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-sm font-bold text-blue-600">
+                                {index + 1}
+                              </div>
+                              <div className="flex-1">
+                                <h4 className="font-medium">{item.title}</h4>
+                                <p className="text-sm text-gray-500">{formatDate(item.created_at)}</p>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-bold">{item.views}</div>
+                                <div className="text-sm text-gray-500">просмотров</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Статистика по категориям */}
+                  {stats?.categoryCounts && (
+                    <Card className="border-0 shadow-sm">
+                      <CardHeader>
+                        <CardTitle>Статистика по категориям</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-4">
+                          {Object.entries(stats.categoryCounts).map(([categoryId, count]) => {
+                            const category = categories.find((cat) => cat.id === categoryId)
+                            return (
+                              <div key={categoryId} className="flex items-center justify-between">
+                                <span>{category?.name || categoryId}</span>
+                                <Badge variant="outline">{count}</Badge>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
                 </TabsContent>
               )}
 
@@ -1198,25 +1481,155 @@ export default function NewsPage() {
 
                     <Card className="border-0 shadow-sm">
                       <CardHeader>
-                        <CardTitle>Управление категориями</CardTitle>
+                        <div className="flex items-center justify-between">
+                          <CardTitle>Управление категориями</CardTitle>
+                          <Dialog open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                                <Plus className="h-4 w-4 mr-2" />
+                                Добавить
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>
+                                  {editingCategory ? "Редактирование категории" : "Создание категории"}
+                                </DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div>
+                                  <Label htmlFor="category-id">ID категории</Label>
+                                  <Input
+                                    id="category-id"
+                                    placeholder="category-id"
+                                    value={categoryFormData.id}
+                                    onChange={(e) => setCategoryFormData({ ...categoryFormData, id: e.target.value })}
+                                    disabled={!!editingCategory}
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="category-name">Название</Label>
+                                  <Input
+                                    id="category-name"
+                                    placeholder="Название категории"
+                                    value={categoryFormData.name}
+                                    onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="category-description">Описание</Label>
+                                  <Textarea
+                                    id="category-description"
+                                    placeholder="Описание категории"
+                                    value={categoryFormData.description}
+                                    onChange={(e) =>
+                                      setCategoryFormData({ ...categoryFormData, description: e.target.value })
+                                    }
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="category-color">Цвет</Label>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      id="category-color"
+                                      type="color"
+                                      value={categoryFormData.color}
+                                      onChange={(e) =>
+                                        setCategoryFormData({ ...categoryFormData, color: e.target.value })
+                                      }
+                                      className="w-16 h-10"
+                                    />
+                                    <Input
+                                      placeholder="#6B7280"
+                                      value={categoryFormData.color}
+                                      onChange={(e) =>
+                                        setCategoryFormData({ ...categoryFormData, color: e.target.value })
+                                      }
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label htmlFor="category-order">Порядок сортировки</Label>
+                                  <Input
+                                    id="category-order"
+                                    type="number"
+                                    value={categoryFormData.sort_order}
+                                    onChange={(e) =>
+                                      setCategoryFormData({
+                                        ...categoryFormData,
+                                        sort_order: Number.parseInt(e.target.value),
+                                      })
+                                    }
+                                  />
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditingCategory(null)
+                                      setIsCategoryDialogOpen(false)
+                                      resetCategoryForm()
+                                    }}
+                                  >
+                                    Отмена
+                                  </Button>
+                                  <Button
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                    onClick={editingCategory ? handleUpdateCategory : handleCreateCategory}
+                                  >
+                                    {editingCategory ? "Сохранить" : "Создать"}
+                                  </Button>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                        {newsCategories.slice(1).map((category) => (
-                          <div key={category.id} className="flex items-center justify-between">
-                            <span>{category.name}</span>
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="sm">
-                                Редактировать
-                              </Button>
-                              <Button variant="outline" size="sm" className="text-red-600">
-                                Удалить
-                              </Button>
+                        {categories
+                          .sort((a, b) => a.sort_order - b.sort_order)
+                          .map((category) => (
+                            <div key={category.id} className="flex items-center justify-between p-3 border rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <div className="w-4 h-4 rounded" style={{ backgroundColor: category.color }}></div>
+                                <div>
+                                  <span className="font-medium">{category.name}</span>
+                                  <p className="text-sm text-gray-500">{category.description}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => moveCategoryUp(category)}
+                                  disabled={category.sort_order === 0}
+                                >
+                                  <ArrowUp className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="sm" onClick={() => moveCategoryDown(category)}>
+                                  <ArrowDown className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    openEditCategoryDialog(category)
+                                    setIsCategoryDialogOpen(true)
+                                  }}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-600"
+                                  onClick={() => handleDeleteCategory(category.id)}
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                        <Button size="sm" className="w-full">
-                          Добавить категорию
-                        </Button>
+                          ))}
                       </CardContent>
                     </Card>
                   </div>
@@ -1233,7 +1646,18 @@ export default function NewsPage() {
                 <CardTitle className="text-lg">Категории</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {newsCategories.map((category) => (
+                <button
+                  onClick={() => setSelectedCategory("all")}
+                  className={`w-full text-left p-2 rounded-lg transition-colors ${
+                    selectedCategory === "all" ? "bg-blue-100 text-blue-800" : "hover:bg-gray-100"
+                  }`}
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Все новости</span>
+                    <span className="text-xs text-gray-500">{news.length}</span>
+                  </div>
+                </button>
+                {categories.map((category) => (
                   <button
                     key={category.id}
                     onClick={() => setSelectedCategory(category.id)}
@@ -1242,9 +1666,12 @@ export default function NewsPage() {
                     }`}
                   >
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium">{category.name}</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded" style={{ backgroundColor: category.color }}></div>
+                        <span className="text-sm font-medium">{category.name}</span>
+                      </div>
                       <span className="text-xs text-gray-500">
-                        {category.id === "all" ? news.length : news.filter((n) => n.category === category.id).length}
+                        {news.filter((n) => n.category === category.id).length}
                       </span>
                     </div>
                   </button>

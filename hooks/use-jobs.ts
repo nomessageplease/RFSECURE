@@ -17,10 +17,8 @@ export function useJobs() {
     setError(null)
 
     try {
-      console.log("Fetching jobs...")
       let query = supabase.from("jobs").select("*")
 
-      // Если пользователь не модератор/админ, показываем только активные вакансии
       if (!profile || !["moderator", "admin"].includes(profile?.role || "")) {
         query = query.eq("status", "active")
       }
@@ -28,14 +26,11 @@ export function useJobs() {
       const { data, error } = await query.order("created_at", { ascending: false })
 
       if (error) {
-        console.error("Error fetching jobs:", error)
         throw error
       }
 
-      console.log("Fetched jobs:", data) // Добавим логирование для отладки
       setJobs(data || [])
     } catch (err) {
-      console.error("Error fetching jobs:", err) // Добавим логирование ошибок
       setError(err instanceof Error ? err.message : "Ошибка загрузки вакансий")
     } finally {
       setLoading(false)
@@ -114,17 +109,14 @@ export function useJobs() {
     try {
       let dbQuery = supabase.from("jobs").select("*")
 
-      // Если пользователь не модератор/админ, показываем только активные вакансии
       if (!profile || !["moderator", "admin"].includes(profile?.role || "")) {
         dbQuery = dbQuery.eq("status", "active")
       }
 
-      // Поиск по названию и описанию
       if (query) {
         dbQuery = dbQuery.or(`title.ilike.%${query}%,description.ilike.%${query}%`)
       }
 
-      // Фильтры
       if (filters.location && filters.location !== "Все города") {
         dbQuery = dbQuery.eq("location", filters.location)
       }
@@ -145,10 +137,8 @@ export function useJobs() {
 
       if (error) throw error
 
-      console.log("Search results:", data) // Добавим логирование для отладки
       setJobs(data || [])
     } catch (err) {
-      console.error("Search error:", err) // Добавим логирование ошибок
       setError(err instanceof Error ? err.message : "Ошибка поиска вакансий")
     } finally {
       setLoading(false)

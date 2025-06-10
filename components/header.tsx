@@ -1,8 +1,10 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Shield, Menu, X, User, LogOut, Settings, Bell } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -28,18 +30,40 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const pathname = usePathname()
+  const router = useRouter()
   const { user, profile, signOut, loading } = useAuth()
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  const handleSignOut = async () => {
+  const handleSignOut = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
     try {
       await signOut()
+      router.push("/")
     } catch (error) {
       console.error("Error signing out:", error)
     }
+  }
+
+  const handleAdminPanelClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    router.push("/admin")
+  }
+
+  const handleProfileClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    router.push("/profile")
+  }
+
+  const handleNotificationsClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    router.push("/notifications")
   }
 
   return (
@@ -85,7 +109,7 @@ export default function Header() {
                 {user ? (
                   <div className="flex items-center gap-3">
                     {/* Notifications */}
-                    <Button variant="ghost" size="sm" className="relative">
+                    <Button variant="ghost" size="sm" className="relative" onClick={handleNotificationsClick}>
                       <Bell className="h-4 w-4" />
                       <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500">
                         3
@@ -117,29 +141,23 @@ export default function Header() {
                           )}
                         </div>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem asChild>
-                          <Link href="/profile" className="flex items-center gap-2">
-                            <User className="h-4 w-4" />
-                            Личный кабинет
-                          </Link>
+                        <DropdownMenuItem onClick={handleProfileClick}>
+                          <User className="h-4 w-4 mr-2" />
+                          Личный кабинет
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                          <Link href="/notifications" className="flex items-center gap-2">
-                            <Bell className="h-4 w-4" />
-                            Уведомления
-                          </Link>
+                        <DropdownMenuItem onClick={handleNotificationsClick}>
+                          <Bell className="h-4 w-4 mr-2" />
+                          Уведомления
                         </DropdownMenuItem>
                         {profile?.role === "admin" && (
-                          <DropdownMenuItem asChild>
-                            <Link href="/admin" className="flex items-center gap-2">
-                              <Settings className="h-4 w-4" />
-                              Админ-панель
-                            </Link>
+                          <DropdownMenuItem onClick={handleAdminPanelClick}>
+                            <Settings className="h-4 w-4 mr-2" />
+                            Админ-панель
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-2 text-red-600">
-                          <LogOut className="h-4 w-4" />
+                        <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
+                          <LogOut className="h-4 w-4 mr-2" />
                           Выйти
                         </DropdownMenuItem>
                       </DropdownMenuContent>
