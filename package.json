@@ -58,8 +58,8 @@
     "zod": "latest"
   },
   "devDependencies": {
-    "@types/node": "^22",
-    "@types/react": "^19",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
     "@types/react-dom": "^19",
     "@typescript-eslint/eslint-plugin": "^8.13.0",
     "@typescript-eslint/parser": "^8.13.0",

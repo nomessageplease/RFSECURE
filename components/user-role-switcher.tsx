@@ -3,6 +3,15 @@
 import type React from "react"
 import { useState, createContext, useContext, useEffect } from "react"
 import { useAuth } from "@/hooks/use-auth"
+import { useUserRole } from "@/hooks/use-user-role"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
+import { Shield, User, Building2 } from "lucide-react"
 
 export type UserRole = "guard" | "chop" | "moderator" | "admin"
 
@@ -41,46 +50,39 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
-function UserRoleSwitcher() {
-  const { userRole, setUserRole } = useUserRole()
+const roles = [
+  { id: "user", name: "Пользователь", icon: User },
+  { id: "chop", name: "ЧОП", icon: Building2 },
+  { id: "admin", name: "Администратор", icon: Shield },
+]
 
-  const toggleUserRole = () => {
-    let newRole: UserRole
-    if (userRole === "guard") newRole = "chop"
-    else if (userRole === "chop") newRole = "moderator"
-    else if (userRole === "moderator") newRole = "admin"
-    else newRole = "guard"
+export function UserRoleSwitcher() {
+  const { role, setRole } = useUserRole()
 
-    setUserRole(newRole)
-  }
-
-  const getRoleLabel = () => {
-    switch (userRole) {
-      case "guard":
-        return "👤 Охранник"
-      case "chop":
-        return "🏢 ЧОП"
-      case "moderator":
-        return "🛡️ Модератор"
-      case "admin":
-        return "⚙️ Админ"
-    }
-  }
-
-  const getRoleColor = () => {
-    switch (userRole) {
-      case "guard":
-        return "bg-blue-600 hover:bg-blue-700"
-      case "chop":
-        return "bg-green-600 hover:bg-green-700"
-      case "moderator":
-        return "bg-orange-600 hover:bg-orange-700"
-      case "admin":
-        return "bg-red-600 hover:bg-red-700"
-    }
-  }
-
-  return null
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="gap-2">
+          {roles.find((r) => r.id === role)?.icon && (
+            <roles.find((r) => r.id === role)!.icon className="h-4 w-4" />
+          )}
+          <span className="hidden md:inline">
+            {roles.find((r) => r.id === role)?.name || "Роль"}
+          </span>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {roles.map((roleOption) => (
+          <DropdownMenuItem
+            key={roleOption.id}
+            onClick={() => setRole(roleOption.id)}
+            className="gap-2"
+          >
+            <roleOption.icon className="h-4 w-4" />
+            <span>{roleOption.name}</span>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
 }
-
-export { UserRoleSwitcher }
