@@ -20,11 +20,8 @@ const navigation = [
   { name: "Главная", href: "/" },
   { name: "Организации", href: "/chops" },
   { name: "Вакансии", href: "/jobs" },
-  { name: "Рейтинги", href: "/ratings" },
-  { name: "Отзывы", href: "/reviews" },
   { name: "Форум", href: "/forum" },
   { name: "Новости", href: "/news" },
-  { name: "Карта", href: "/map" },
 ]
 
 export default function Header() {

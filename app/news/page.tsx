@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useUserRole } from "@/components/user-role-switcher"
 import {
   Calendar,
@@ -24,107 +24,232 @@ import {
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { useToast } from "@/hooks/use-toast"
 import Header from "@/components/header"
+import type { News } from "@/lib/supabase/types"
 
 const newsCategories = [
-  { id: "all", name: "Все новости", count: 156 },
-  { id: "industry", name: "Отрасль", count: 45 },
-  { id: "legislation", name: "Законодательство", count: 32 },
-  { id: "technology", name: "Технологии", count: 28 },
-  { id: "companies", name: "Компании", count: 51 },
+  { id: "all", name: "Все новости" },
+  { id: "industry", name: "Отрасль" },
+  { id: "legislation", name: "Законодательство" },
+  { id: "technology", name: "Технологии" },
+  { id: "companies", name: "Компании" },
+  { id: "general", name: "Общие" },
 ]
 
-const news = [
-  {
-    id: 1,
-    title: "Новые требования к лицензированию частных охранных организаций",
-    excerpt:
-      "Росгвардия утвердила новые требования к получению лицензий на осуществление частной охранной деятельности...",
-    content: "Полный текст новости с подробным описанием изменений в законодательстве...",
-    category: "legislation",
-    author: "Редакция",
-    authorAvatar: "/placeholder.svg?height=40&width=40",
-    publishedAt: "2024-01-15T10:00:00Z",
-    views: 1234,
-    comments: 23,
-    likes: 45,
-    image: "/placeholder.svg?height=200&width=400",
-    tags: ["лицензирование", "росгвардия", "ЧОП"],
-    featured: true,
-    status: "published",
-  },
-  {
-    id: 2,
-    title: "Рынок охранных услуг показал рост на 15% в 2024 году",
-    excerpt: "Аналитики отмечают значительный рост рынка частных охранных услуг в России...",
-    content: "Подробный анализ рынка охранных услуг за 2024 год...",
-    category: "industry",
-    author: "Аналитический отдел",
-    authorAvatar: "/placeholder.svg?height=40&width=40",
-    publishedAt: "2024-01-14T14:30:00Z",
-    views: 892,
-    comments: 18,
-    likes: 32,
-    image: "/placeholder.svg?height=200&width=400",
-    tags: ["рынок", "статистика", "рост"],
-    featured: false,
-    status: "published",
-  },
-  {
-    id: 3,
-    title: "Внедрение ИИ в системы видеонаблюдения: новые возможности",
-    excerpt: "Искусственный интеллект революционизирует сферу безопасности и видеонаблюдения...",
-    content: "Обзор новых технологий ИИ в сфере безопасности...",
-    category: "technology",
-    author: "Технический эксперт",
-    authorAvatar: "/placeholder.svg?height=40&width=40",
-    publishedAt: "2024-01-13T09:15:00Z",
-    views: 567,
-    comments: 12,
-    likes: 28,
-    image: "/placeholder.svg?height=200&width=400",
-    tags: ["ИИ", "видеонаблюдение", "технологии"],
-    featured: false,
-    status: "draft",
-  },
-  {
-    id: 4,
-    title: "Крупнейшая охранная компания России расширяет географию",
-    excerpt: "Компания 'Альфа-Безопасность' объявила о планах открытия новых филиалов в регионах...",
-    content: "Подробности о планах расширения компании...",
-    category: "companies",
-    author: "Корреспондент",
-    authorAvatar: "/placeholder.svg?height=40&width=40",
-    publishedAt: "2024-01-12T16:45:00Z",
-    views: 445,
-    comments: 8,
-    likes: 19,
-    image: "/placeholder.svg?height=200&width=400",
-    tags: ["компании", "расширение", "регионы"],
-    featured: false,
-    status: "pending",
-  },
-]
-
-const trendingTopics = [
-  { name: "Лицензирование ЧОП", count: 156 },
-  { name: "Видеонаблюдение", count: 89 },
-  { name: "Охрана объектов", count: 67 },
-  { name: "Новые технологии", count: 45 },
-  { name: "Законодательство", count: 34 },
-]
+interface NewsFormData {
+  title: string
+  excerpt: string
+  content: string
+  category: string
+  image_url: string
+  tags: string[]
+  featured: boolean
+  status: "draft" | "published"
+}
 
 export default function NewsPage() {
   const { userRole } = useUserRole()
+  const { toast } = useToast()
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const [news, setNews] = useState<News[]>([])
+  const [loading, setLoading] = useState(true)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [editingNews, setEditingNews] = useState<News | null>(null)
+  const [formData, setFormData] = useState<NewsFormData>({
+    title: "",
+    excerpt: "",
+    content: "",
+    category: "general",
+    image_url: "",
+    tags: [],
+    featured: false,
+    status: "draft",
+  })
+
+  useEffect(() => {
+    fetchNews()
+  }, [selectedCategory])
+
+  const fetchNews = async () => {
+    try {
+      setLoading(true)
+      const params = new URLSearchParams()
+      if (selectedCategory !== "all") {
+        params.append("category", selectedCategory)
+      }
+
+      const response = await fetch(`/api/news?${params}`)
+      const result = await response.json()
+
+      if (response.ok) {
+        setNews(result.data || [])
+      } else {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось загрузить новости",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching news:", error)
+      toast({
+        title: "Ошибка",
+        description: "Не удалось загрузить новости",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreateNews = async () => {
+    try {
+      const response = await fetch("/api/news", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          author_name: "Администратор",
+          tags: formData.tags.filter((tag) => tag.trim() !== ""),
+        }),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Успех",
+          description: "Новость создана",
+        })
+        setIsCreateDialogOpen(false)
+        resetForm()
+        fetchNews()
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Ошибка",
+          description: error.error || "Не удалось создать новость",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error creating news:", error)
+      toast({
+        title: "Ошибка",
+        description: "Не удалось создать новость",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleUpdateNews = async () => {
+    if (!editingNews) return
+
+    try {
+      const response = await fetch(`/api/news/${editingNews.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          tags: formData.tags.filter((tag) => tag.trim() !== ""),
+        }),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Успех",
+          description: "Новость обновлена",
+        })
+        setEditingNews(null)
+        resetForm()
+        fetchNews()
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Ошибка",
+          description: error.error || "Не удалось обновить новость",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error updating news:", error)
+      toast({
+        title: "Ошибка",
+        description: "Не удалось обновить новость",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDeleteNews = async (newsId: string) => {
+    if (!confirm("Вы уверены, что хотите удалить эту новость?")) return
+
+    try {
+      const response = await fetch(`/api/news/${newsId}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Успех",
+          description: "Новость удалена",
+        })
+        fetchNews()
+      } else {
+        const error = await response.json()
+        toast({
+          title: "Ошибка",
+          description: error.error || "Не удалось удалить новость",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error deleting news:", error)
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить новость",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const resetForm = () => {
+    setFormData({
+      title: "",
+      excerpt: "",
+      content: "",
+      category: "general",
+      image_url: "",
+      tags: [],
+      featured: false,
+      status: "draft",
+    })
+  }
+
+  const openEditDialog = (newsItem: News) => {
+    setEditingNews(newsItem)
+    setFormData({
+      title: newsItem.title,
+      excerpt: newsItem.excerpt || "",
+      content: newsItem.content,
+      category: newsItem.category,
+      image_url: newsItem.image_url || "",
+      tags: newsItem.tags || [],
+      featured: newsItem.featured,
+      status: newsItem.status,
+    })
+  }
 
   const getPageTitle = () => {
     switch (userRole) {
@@ -254,7 +379,9 @@ export default function NewsPage() {
       case "moderator":
         return (
           <div className="flex gap-2">
-            <Badge className="bg-orange-100 text-orange-800 border-0">На модерации: 3</Badge>
+            <Badge className="bg-orange-100 text-orange-800 border-0">
+              На модерации: {news.filter((n) => n.status === "draft").length}
+            </Badge>
             <Button variant="outline" size="sm" className="hidden md:flex">
               <Settings className="h-4 w-4 mr-2" />
               Правила
@@ -264,51 +391,228 @@ export default function NewsPage() {
       case "admin":
         return (
           <div className="flex gap-2">
-            <Dialog>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-blue-600 hover:bg-blue-700 hidden md:flex text-sm" size="sm">
                   <Plus className="h-4 w-4 mr-2" />
                   Создать новость
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Создание новости</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="news-title">Заголовок</Label>
-                    <Input id="news-title" placeholder="Введите заголовок новости" />
+                    <Input
+                      id="news-title"
+                      placeholder="Введите заголовок новости"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="news-category">Категория</Label>
-                    <Select>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Выберите категорию" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="industry">Отрасль</SelectItem>
-                        <SelectItem value="legislation">Законодательство</SelectItem>
-                        <SelectItem value="technology">Технологии</SelectItem>
-                        <SelectItem value="companies">Компании</SelectItem>
+                        {newsCategories.slice(1).map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
                     <Label htmlFor="news-excerpt">Краткое описание</Label>
-                    <Textarea id="news-excerpt" placeholder="Краткое описание новости..." />
+                    <Textarea
+                      id="news-excerpt"
+                      placeholder="Краткое описание новости..."
+                      value={formData.excerpt}
+                      onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                    />
                   </div>
                   <div>
                     <Label htmlFor="news-content">Содержание</Label>
-                    <Textarea id="news-content" placeholder="Полный текст новости..." className="min-h-32" />
+                    <Textarea
+                      id="news-content"
+                      placeholder="Полный текст новости..."
+                      className="min-h-32"
+                      value={formData.content}
+                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="news-image">URL изображения</Label>
+                    <Input
+                      id="news-image"
+                      placeholder="https://example.com/image.jpg"
+                      value={formData.image_url}
+                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="news-tags">Теги (через запятую)</Label>
+                    <Input
+                      id="news-tags"
+                      placeholder="тег1, тег2, тег3"
+                      value={formData.tags.join(", ")}
+                      onChange={(e) =>
+                        setFormData({ ...formData, tags: e.target.value.split(",").map((tag) => tag.trim()) })
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.featured}
+                        onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                      />
+                      Рекомендуемая новость
+                    </label>
                   </div>
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline">Сохранить как черновик</Button>
-                    <Button className="bg-blue-600 hover:bg-blue-700">Опубликовать</Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setFormData({ ...formData, status: "draft" })
+                        handleCreateNews()
+                      }}
+                    >
+                      Сохранить как черновик
+                    </Button>
+                    <Button
+                      className="bg-blue-600 hover:bg-blue-700"
+                      onClick={() => {
+                        setFormData({ ...formData, status: "published" })
+                        handleCreateNews()
+                      }}
+                    >
+                      Опубликовать
+                    </Button>
                   </div>
                 </div>
               </DialogContent>
             </Dialog>
+
+            {/* Edit Dialog */}
+            <Dialog open={!!editingNews} onOpenChange={() => setEditingNews(null)}>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Редактирование новости</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="edit-news-title">Заголовок</Label>
+                    <Input
+                      id="edit-news-title"
+                      placeholder="Введите заголовок новости"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-news-category">Категория</Label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value) => setFormData({ ...formData, category: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Выберите категорию" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {newsCategories.slice(1).map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-news-excerpt">Краткое описание</Label>
+                    <Textarea
+                      id="edit-news-excerpt"
+                      placeholder="Краткое описание новости..."
+                      value={formData.excerpt}
+                      onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-news-content">Содержание</Label>
+                    <Textarea
+                      id="edit-news-content"
+                      placeholder="Полный текст новости..."
+                      className="min-h-32"
+                      value={formData.content}
+                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-news-image">URL изображения</Label>
+                    <Input
+                      id="edit-news-image"
+                      placeholder="https://example.com/image.jpg"
+                      value={formData.image_url}
+                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-news-tags">Теги (через запятую)</Label>
+                    <Input
+                      id="edit-news-tags"
+                      placeholder="тег1, тег2, тег3"
+                      value={formData.tags.join(", ")}
+                      onChange={(e) =>
+                        setFormData({ ...formData, tags: e.target.value.split(",").map((tag) => tag.trim()) })
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.featured}
+                        onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                      />
+                      Рекомендуемая новость
+                    </label>
+                  </div>
+                  <div>
+                    <Label>Статус</Label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value: "draft" | "published") => setFormData({ ...formData, status: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Черновик</SelectItem>
+                        <SelectItem value="published">Опубликовано</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setEditingNews(null)}>
+                      Отмена
+                    </Button>
+                    <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleUpdateNews}>
+                      Сохранить изменения
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
             <Button variant="outline" size="sm" className="hidden md:flex">
               <Settings className="h-4 w-4 mr-2" />
               Настройки
@@ -320,7 +624,7 @@ export default function NewsPage() {
     }
   }
 
-  const getNewsActions = (newsItem) => {
+  const getNewsActions = (newsItem: News) => {
     switch (userRole) {
       case "guard":
       case "chop":
@@ -339,7 +643,7 @@ export default function NewsPage() {
       case "moderator":
         return (
           <div className="flex items-center gap-2">
-            {newsItem.status === "pending" ? (
+            {newsItem.status === "draft" ? (
               <>
                 <Button size="sm" className="bg-green-600 hover:bg-green-700">
                   <CheckCircle className="h-4 w-4 mr-1" />
@@ -351,7 +655,7 @@ export default function NewsPage() {
                 </Button>
               </>
             ) : (
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => openEditDialog(newsItem)}>
                 <Edit className="h-4 w-4 mr-1" />
                 Редактировать
               </Button>
@@ -361,7 +665,7 @@ export default function NewsPage() {
       case "admin":
         return (
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => openEditDialog(newsItem)}>
               <Edit className="h-4 w-4 mr-1" />
               Редактировать
             </Button>
@@ -369,7 +673,7 @@ export default function NewsPage() {
               <BarChart3 className="h-4 w-4 mr-1" />
               Статистика
             </Button>
-            <Button variant="outline" size="sm" className="text-red-600">
+            <Button variant="outline" size="sm" className="text-red-600" onClick={() => handleDeleteNews(newsItem.id)}>
               <Trash className="h-4 w-4 mr-1" />
               Удалить
             </Button>
@@ -383,19 +687,19 @@ export default function NewsPage() {
   const filteredNews = news.filter((item) => {
     const matchesSearch =
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.excerpt.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || item.category === selectedCategory
+      (item.excerpt && item.excerpt.toLowerCase().includes(searchQuery.toLowerCase()))
 
     // Для модераторов и админов показываем все новости
     if (userRole === "moderator" || userRole === "admin") {
-      return matchesSearch && matchesCategory
+      return matchesSearch
     }
 
     // Для обычных пользователей показываем только опубликованные
-    return matchesSearch && matchesCategory && item.status === "published"
+    return matchesSearch && item.status === "published"
   })
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "Не опубликовано"
     const date = new Date(dateString)
     return date.toLocaleDateString("ru-RU", {
       day: "numeric",
@@ -404,6 +708,20 @@ export default function NewsPage() {
       hour: "2-digit",
       minute: "2-digit",
     })
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Загрузка новостей...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -440,13 +758,13 @@ export default function NewsPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {news
-                          .filter((item) => item.status === "pending")
+                        {filteredNews
+                          .filter((item) => item.status === "draft")
                           .map((newsItem) => (
                             <div key={newsItem.id} className="p-4 border rounded-lg">
                               <div className="flex items-start gap-4">
                                 <img
-                                  src={newsItem.image || "/placeholder.svg"}
+                                  src={newsItem.image_url || "/placeholder.svg?height=80&width=80"}
                                   alt={newsItem.title}
                                   className="w-20 h-20 object-cover rounded-lg"
                                 />
@@ -454,8 +772,8 @@ export default function NewsPage() {
                                   <h4 className="font-medium mb-2">{newsItem.title}</h4>
                                   <p className="text-sm text-gray-600 mb-2">{newsItem.excerpt}</p>
                                   <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-                                    <span>Автор: {newsItem.author}</span>
-                                    <span>{formatDate(newsItem.publishedAt)}</span>
+                                    <span>Автор: {newsItem.author_name}</span>
+                                    <span>{formatDate(newsItem.created_at)}</span>
                                   </div>
                                   <div className="flex gap-2">
                                     <Button size="sm" className="bg-green-600 hover:bg-green-700">
@@ -464,7 +782,7 @@ export default function NewsPage() {
                                     <Button variant="outline" size="sm" className="text-red-600">
                                       Отклонить
                                     </Button>
-                                    <Button variant="outline" size="sm">
+                                    <Button variant="outline" size="sm" onClick={() => openEditDialog(newsItem)}>
                                       Просмотреть
                                     </Button>
                                   </div>
@@ -472,6 +790,9 @@ export default function NewsPage() {
                               </div>
                             </div>
                           ))}
+                        {filteredNews.filter((item) => item.status === "draft").length === 0 && (
+                          <p className="text-gray-500 text-center py-8">Нет новостей на модерации</p>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -498,7 +819,7 @@ export default function NewsPage() {
                     <SelectContent>
                       {newsCategories.map((category) => (
                         <SelectItem key={category.id} value={category.id}>
-                          {category.name} ({category.count})
+                          {category.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -521,7 +842,7 @@ export default function NewsPage() {
                               <div className="md:flex">
                                 <div className="md:w-1/3">
                                   <img
-                                    src={newsItem.image || "/placeholder.svg"}
+                                    src={newsItem.image_url || "/placeholder.svg?height=200&width=300"}
                                     alt={newsItem.title}
                                     className="w-full h-48 md:h-full object-cover"
                                   />
@@ -540,7 +861,7 @@ export default function NewsPage() {
                                             : "bg-orange-100 text-orange-800"
                                         }
                                       >
-                                        {newsItem.status === "published" ? "Опубликовано" : "На модерации"}
+                                        {newsItem.status === "published" ? "Опубликовано" : "Черновик"}
                                       </Badge>
                                     )}
                                   </div>
@@ -552,22 +873,18 @@ export default function NewsPage() {
                                     <div className="flex items-center gap-4 text-sm text-gray-500">
                                       <div className="flex items-center gap-2">
                                         <Avatar className="h-6 w-6">
-                                          <AvatarImage
-                                            src={newsItem.authorAvatar || "/placeholder.svg"}
-                                            alt={newsItem.author}
-                                          />
                                           <AvatarFallback>
-                                            {newsItem.author
+                                            {newsItem.author_name
                                               .split(" ")
                                               .map((n) => n[0])
                                               .join("")}
                                           </AvatarFallback>
                                         </Avatar>
-                                        <span>{newsItem.author}</span>
+                                        <span>{newsItem.author_name}</span>
                                       </div>
                                       <div className="flex items-center gap-1">
                                         <Calendar className="h-4 w-4" />
-                                        <span>{formatDate(newsItem.publishedAt)}</span>
+                                        <span>{formatDate(newsItem.published_at || newsItem.created_at)}</span>
                                       </div>
                                       <div className="flex items-center gap-1">
                                         <Eye className="h-4 w-4" />
@@ -575,7 +892,7 @@ export default function NewsPage() {
                                       </div>
                                       <div className="flex items-center gap-1">
                                         <MessageSquare className="h-4 w-4" />
-                                        <span>{newsItem.comments}</span>
+                                        <span>{newsItem.comments_count}</span>
                                       </div>
                                     </div>
                                     {getNewsActions(newsItem)}
@@ -602,7 +919,7 @@ export default function NewsPage() {
                           <div className="md:flex">
                             <div className="md:w-1/4">
                               <img
-                                src={newsItem.image || "/placeholder.svg"}
+                                src={newsItem.image_url || "/placeholder.svg?height=150&width=200"}
                                 alt={newsItem.title}
                                 className="w-full h-48 md:h-32 object-cover"
                               />
@@ -617,16 +934,16 @@ export default function NewsPage() {
                                     className={
                                       newsItem.status === "published"
                                         ? "bg-green-100 text-green-800"
-                                        : newsItem.status === "pending"
+                                        : newsItem.status === "draft"
                                           ? "bg-orange-100 text-orange-800"
                                           : "bg-gray-100 text-gray-800"
                                     }
                                   >
                                     {newsItem.status === "published"
                                       ? "Опубликовано"
-                                      : newsItem.status === "pending"
-                                        ? "На модерации"
-                                        : "Черновик"}
+                                      : newsItem.status === "draft"
+                                        ? "Черновик"
+                                        : "Архив"}
                                   </Badge>
                                 )}
                               </div>
@@ -638,11 +955,11 @@ export default function NewsPage() {
                                 <div className="flex items-center gap-4 text-sm text-gray-500">
                                   <div className="flex items-center gap-1">
                                     <User className="h-4 w-4" />
-                                    <span>{newsItem.author}</span>
+                                    <span>{newsItem.author_name}</span>
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <Clock className="h-4 w-4" />
-                                    <span>{formatDate(newsItem.publishedAt)}</span>
+                                    <span>{formatDate(newsItem.published_at || newsItem.created_at)}</span>
                                   </div>
                                   <div className="flex items-center gap-1">
                                     <Eye className="h-4 w-4" />
@@ -657,6 +974,12 @@ export default function NewsPage() {
                       </Card>
                     ))}
                 </div>
+
+                {filteredNews.length === 0 && (
+                  <div className="text-center py-12">
+                    <p className="text-gray-500 text-lg">Новости не найдены</p>
+                  </div>
+                )}
               </TabsContent>
 
               {/* Рекомендуемые новости */}
@@ -683,8 +1006,8 @@ export default function NewsPage() {
                           <p className="text-gray-600 mb-4">{newsItem.excerpt}</p>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4 text-sm text-gray-500">
-                              <span>{newsItem.author}</span>
-                              <span>{formatDate(newsItem.publishedAt)}</span>
+                              <span>{newsItem.author_name}</span>
+                              <span>{formatDate(newsItem.published_at || newsItem.created_at)}</span>
                               <div className="flex items-center gap-1">
                                 <Eye className="h-4 w-4" />
                                 <span>{newsItem.views}</span>
@@ -723,8 +1046,8 @@ export default function NewsPage() {
                           <p className="text-gray-600 mb-4">{newsItem.excerpt}</p>
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4 text-sm text-gray-500">
-                              <span>{newsItem.author}</span>
-                              <span>{formatDate(newsItem.publishedAt)}</span>
+                              <span>{newsItem.author_name}</span>
+                              <span>{formatDate(newsItem.published_at || newsItem.created_at)}</span>
                               <div className="flex items-center gap-1">
                                 <Eye className="h-4 w-4" />
                                 <span>{newsItem.views}</span>
@@ -747,29 +1070,56 @@ export default function NewsPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
-                        {news
+                        {filteredNews
                           .filter((item) => item.status === "draft")
                           .map((newsItem) => (
                             <div key={newsItem.id} className="p-4 border rounded-lg">
                               <h4 className="font-medium mb-2">{newsItem.title}</h4>
                               <p className="text-sm text-gray-600 mb-2">{newsItem.excerpt}</p>
                               <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-                                <span>Автор: {newsItem.author}</span>
-                                <span>Создано: {formatDate(newsItem.publishedAt)}</span>
+                                <span>Автор: {newsItem.author_name}</span>
+                                <span>Создано: {formatDate(newsItem.created_at)}</span>
                               </div>
                               <div className="flex gap-2">
-                                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                                <Button
+                                  size="sm"
+                                  className="bg-blue-600 hover:bg-blue-700"
+                                  onClick={() => openEditDialog(newsItem)}
+                                >
                                   Редактировать
                                 </Button>
-                                <Button variant="outline" size="sm">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={async () => {
+                                    await fetch(`/api/news/${newsItem.id}`, {
+                                      method: "PUT",
+                                      headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({
+                                        ...newsItem,
+                                        status: "published",
+                                        published_at: new Date().toISOString(),
+                                      }),
+                                    })
+                                    fetchNews()
+                                  }}
+                                >
                                   Опубликовать
                                 </Button>
-                                <Button variant="outline" size="sm" className="text-red-600">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-red-600"
+                                  onClick={() => handleDeleteNews(newsItem.id)}
+                                >
                                   Удалить
                                 </Button>
                               </div>
                             </div>
                           ))}
+                        {filteredNews.filter((item) => item.status === "draft").length === 0 && (
+                          <p className="text-gray-500 text-center py-8">Нет черновиков</p>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -782,21 +1132,25 @@ export default function NewsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <Card className="border-0 shadow-sm">
                       <CardContent className="p-6 text-center">
-                        <div className="text-2xl font-bold text-gray-900">156</div>
+                        <div className="text-2xl font-bold text-gray-900">{news.length}</div>
                         <div className="text-sm text-gray-600">Всего новостей</div>
                         <div className="text-xs text-green-600 mt-1">+12% за месяц</div>
                       </CardContent>
                     </Card>
                     <Card className="border-0 shadow-sm">
                       <CardContent className="p-6 text-center">
-                        <div className="text-2xl font-bold text-gray-900">45,234</div>
+                        <div className="text-2xl font-bold text-gray-900">
+                          {news.reduce((sum, item) => sum + item.views, 0)}
+                        </div>
                         <div className="text-sm text-gray-600">Просмотров</div>
                         <div className="text-xs text-green-600 mt-1">+18% за месяц</div>
                       </CardContent>
                     </Card>
                     <Card className="border-0 shadow-sm">
                       <CardContent className="p-6 text-center">
-                        <div className="text-2xl font-bold text-gray-900">1,234</div>
+                        <div className="text-2xl font-bold text-gray-900">
+                          {news.reduce((sum, item) => sum + item.comments_count, 0)}
+                        </div>
                         <div className="text-sm text-gray-600">Комментариев</div>
                         <div className="text-xs text-green-600 mt-1">+8% за месяц</div>
                       </CardContent>
@@ -889,7 +1243,9 @@ export default function NewsPage() {
                   >
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium">{category.name}</span>
-                      <span className="text-xs text-gray-500">{category.count}</span>
+                      <span className="text-xs text-gray-500">
+                        {category.id === "all" ? news.length : news.filter((n) => n.category === category.id).length}
+                      </span>
                     </div>
                   </button>
                 ))}
@@ -899,18 +1255,20 @@ export default function NewsPage() {
             {/* Trending Topics */}
             <Card className="border-0 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg">Популярные темы</CardTitle>
+                <CardTitle className="text-lg">Популярные теги</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {trendingTopics.map((topic, index) => (
-                  <div key={index} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Tag className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-700">{topic.name}</span>
+                {Array.from(new Set(news.flatMap((n) => n.tags || [])))
+                  .slice(0, 10)
+                  .map((tag, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Tag className="h-4 w-4 text-gray-400" />
+                        <span className="text-sm text-gray-700">{tag}</span>
+                      </div>
+                      <span className="text-xs text-gray-500">{news.filter((n) => n.tags?.includes(tag)).length}</span>
                     </div>
-                    <span className="text-xs text-gray-500">{topic.count}</span>
-                  </div>
-                ))}
+                  ))}
               </CardContent>
             </Card>
 

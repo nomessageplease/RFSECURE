@@ -319,6 +319,68 @@ export type Database = {
           updated_at?: string
         }
       }
+      news: {
+        Row: {
+          id: string
+          title: string
+          slug: string
+          excerpt: string | null
+          content: string
+          category: string
+          author_id: string | null
+          author_name: string
+          image_url: string | null
+          tags: string[]
+          status: "draft" | "published" | "archived"
+          featured: boolean
+          views: number
+          likes: number
+          comments_count: number
+          published_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          slug: string
+          excerpt?: string | null
+          content: string
+          category?: string
+          author_id?: string | null
+          author_name: string
+          image_url?: string | null
+          tags?: string[]
+          status?: "draft" | "published" | "archived"
+          featured?: boolean
+          views?: number
+          likes?: number
+          comments_count?: number
+          published_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          slug?: string
+          excerpt?: string | null
+          content?: string
+          category?: string
+          author_id?: string | null
+          author_name?: string
+          image_url?: string | null
+          tags?: string[]
+          status?: "draft" | "published" | "archived"
+          featured?: boolean
+          views?: number
+          likes?: number
+          comments_count?: number
+          published_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
@@ -329,3 +391,4 @@ export type JobApplication = Database["public"]["Tables"]["job_applications"]["R
 export type Chop = Database["public"]["Tables"]["chops"]["Row"]
 export type ChopConnectionRequest = Database["public"]["Tables"]["chop_connection_requests"]["Row"]
 export type ChopHrAssignment = Database["public"]["Tables"]["chop_hr_assignments"]["Row"]
+export type News = Database["public"]["Tables"]["news"]["Row"]
