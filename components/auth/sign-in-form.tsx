@@ -7,27 +7,22 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
+import { signIn } from "next-auth/react"
 import { useState } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
-import { useAuth } from "@/hooks/use-auth"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { useSearchParams } from "next/navigation"
 
 const formSchema = z.object({
   email: z.string().email({
-    message: "Пожалуйста, введите корректный email адрес.",
+    message: "Please enter a valid email address.",
   }),
   password: z.string().min(8, {
-    message: "Пароль должен содержать минимум 8 символов.",
+    message: "Password must be at least 8 characters.",
   }),
 })
 
 export function SignInForm() {
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
   const searchParams = useSearchParams()
-  const router = useRouter()
-  const { signIn } = useAuth()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -38,36 +33,34 @@ export function SignInForm() {
   })
 
   async function handleSubmit(values: z.infer<typeof formSchema>) {
-    try {
-      setError(null)
-      setLoading(true)
-      await signIn(values.email, values.password)
-      
-      // После успешного входа
+    setError(null)
+    const signInResponse = await signIn("credentials", {
+      email: values.email,
+      password: values.password,
+      redirect: false,
+    })
+
+    if (signInResponse?.error) {
+      setError("Invalid email or password.")
+    }
+
+    // После успешного входа
+    if (!error) {
+      // Перенаправляем на страницу, с которой пришел пользователь, или на главную
       const redirectTo = searchParams.get("redirectedFrom") || "/"
-      router.push(redirectTo)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Ошибка входа")
-    } finally {
-      setLoading(false)
+      window.location.href = redirectTo
     }
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Вход в систему</CardTitle>
-        <CardDescription>Введите свои учетные данные для входа</CardDescription>
+        <CardTitle>Sign in</CardTitle>
+        <CardDescription>Enter your email and password to sign in</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
             <FormField
               control={form.control}
               name="email"
@@ -75,7 +68,7 @@ export function SignInForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="your@email.com" type="email" {...field} />
+                    <Input placeholder="mail@example.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -86,16 +79,17 @@ export function SignInForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Пароль</FormLabel>
+                  <FormLabel>Password</FormLabel>
                   <FormControl>
-                    <Input placeholder="••••••••" type="password" {...field} />
+                    <Input type="password" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Вход..." : "Войти"}
+            {error && <p className="text-red-500">{error}</p>}
+            <Button type="submit" className="w-full">
+              Sign in
             </Button>
           </form>
         </Form>

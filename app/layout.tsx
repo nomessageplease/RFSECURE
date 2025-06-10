@@ -2,13 +2,14 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { UserRoleProvider } from "@/hooks/use-user-role"
+import { UserRoleProvider } from "@/components/user-role-switcher"
 
-const inter = Inter({ subsets: ["latin", "cyrillic"] })
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "RFSECURE - Платформа для поиска и управления охранными услугами",
-  description: "Найдите надежную охрану для вашего бизнеса или мероприятия",
+  title: "Охрана РФ - Модульная платформа",
+  description: "Единая экосистема охранной отрасли России",
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({

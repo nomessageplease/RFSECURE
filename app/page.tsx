@@ -1,6 +1,5 @@
 "use client"
 
-import { useMemo } from "react"
 import { useUserRole } from "@/components/user-role-switcher"
 import {
   Search,
@@ -34,8 +33,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from "next/link"
 import Header from "@/components/header"
 import { ChopCard } from "@/components/chop-card"
-import { ModulesSection } from "@/components/modules/modules-section"
-import { featuredChops } from "@/data/featured-chops"
 
 const modules = [
   {
@@ -161,6 +158,63 @@ const modules = [
   },
 ]
 
+const featuredChops = [
+  {
+    id: 1,
+    name: "Охранное Агентство Авангард",
+    rating: 4.8,
+    reviewCount: 156,
+    location: "Москва",
+    verified: true,
+    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/%D0%BB%D0%BE%D0%B3%D0%BE%201-pSoYbxeRfeKKzvB9MhQQpkC67sQnGz.jpeg",
+    specialization: ["VIP-охрана", "Объекты"],
+    employees: 450,
+    experience: 15,
+    activeJobs: 12,
+    recentReview: "Отличная работа, рекомендую!",
+    phone: "+7 (495) 123-45-67",
+    email: "info@avangard-security.ru",
+    description: "Ведущая охранная компания Москвы с 15-летним опытом работы.",
+    price: "от 25 000 ₽/мес",
+  },
+  {
+    id: 2,
+    name: "Щит-Безопасность",
+    rating: 4.7,
+    reviewCount: 134,
+    location: "Москва",
+    verified: true,
+    logo: "/placeholder.svg?height=200&width=200",
+    specialization: ["Мероприятия", "VIP"],
+    employees: 180,
+    experience: 10,
+    activeJobs: 8,
+    recentReview: "Профессиональный подход",
+    phone: "+7 (495) 234-56-78",
+    email: "info@shield-security.ru",
+    description: "Профессиональная охрана мероприятий и VIP-персон.",
+    price: "от 30 000 ₽/мес",
+  },
+  {
+    id: 3,
+    name: "Барс-Охрана",
+    rating: 4.6,
+    reviewCount: 89,
+    location: "СПб",
+    verified: true,
+    logo: "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/%D0%BB%D0%BE%D0%B3%D0%BE%202-LPcWjTR8tqF96i00nlQSHBA3vXRfbt.jpeg",
+    specialization: ["ТЦ", "Склады"],
+    employees: 280,
+    experience: 8,
+    activeJobs: 5,
+    recentReview: "Надежная компания",
+    phone: "+7 (812) 345-67-89",
+    email: "info@bars-security.ru",
+    description: "Специализируемся на охране торговых центров и складов.",
+    price: "от 20 000 ₽/мес",
+  },
+]
+
 const stats = [
   { label: "ЧОПов в реестре", value: "1,247", icon: Building2, change: "+12%", subtext: "Верифицированных: 1,156" },
   { label: "Проверенных отзывов", value: "8,934", icon: MessageSquare, change: "+5%", subtext: "Средний рейтинг: 4.2" },
@@ -209,96 +263,617 @@ const quickActions = [
 ]
 
 export default function HomePage() {
-  const { role } = useUserRole()
+  const { userRole } = useUserRole()
 
-  const heroTitle = useMemo(() => {
-    switch (role) {
-      case "admin":
-        return "Панель управления платформой"
+  const getHeroTitle = () => {
+    switch (userRole) {
+      case "guard":
+        return "Найдите работу в сфере охраны"
       case "chop":
-        return "Управление вашим ЧОПом"
-      case "user":
-        return "Найдите надежную охрану"
+        return "Управляйте своей охранной компанией"
+      case "moderator":
+        return "Модерируйте контент платформы"
+      case "admin":
+        return "Администрируйте платформу"
       default:
-        return "Добро пожаловать в RFSECURE"
+        return "Платформа охранной отрасли России"
     }
-  }, [role])
+  }
 
-  const heroDescription = useMemo(() => {
-    switch (role) {
-      case "admin":
-        return "Полный контроль над платформой, модерация и аналитика"
+  const getHeroDescription = () => {
+    switch (userRole) {
+      case "guard":
+        return "Найдите лучшие вакансии, изучите рейтинги компаний и получите работу мечты в сфере безопасности"
       case "chop":
-        return "Управляйте рейтингом, отзывами и вакансиями"
-      case "user":
-        return "Выберите надежную охрану из проверенных ЧОПов"
+        return "Размещайте вакансии, управляйте репутацией, находите лучших сотрудников и развивайте бизнес"
+      case "moderator":
+        return "Обеспечивайте качество контента, модерируйте отзывы и поддерживайте порядок на платформе"
+      case "admin":
+        return "Полное управление платформой, аналитика, настройки и администрирование всех разделов"
       default:
-        return "Платформа для поиска и управления охранными услугами"
+        return "Поиск охранных компаний, вакансий, рейтинги, отзывы и всё для работы в сфере безопасности"
     }
-  }, [role])
+  }
 
-  const roleSpecificActions = useMemo(() => {
-    switch (role) {
-      case "admin":
-        return [
-          { text: "Модерация", href: "/admin/moderation" },
-          { text: "Аналитика", href: "/admin/analytics" },
-        ]
+  const getRoleSpecificActions = () => {
+    switch (userRole) {
+      case "guard":
+        return (
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link href="/jobs">
+              <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+                <Briefcase className="h-5 w-5 mr-2" />
+                Найти работу
+              </Button>
+            </Link>
+            <Link href="/chops">
+              <Button variant="outline" size="lg">
+                <Building2 className="h-5 w-5 mr-2" />
+                Изучить ЧОПы
+              </Button>
+            </Link>
+            <Link href="/profile">
+              <Button variant="outline" size="lg">
+                <UserCheck className="h-5 w-5 mr-2" />
+                Создать резюме
+              </Button>
+            </Link>
+          </div>
+        )
       case "chop":
-        return [
-          { text: "Управление ЧОПом", href: "/profile/chop" },
-          { text: "Вакансии", href: "/jobs" },
-        ]
-      case "user":
-        return [
-          { text: "Найти ЧОП", href: "/search" },
-          { text: "Оставить отзыв", href: "/reviews/new" },
-        ]
-      default:
-        return [
-          { text: "Регистрация", href: "/auth/register" },
-          { text: "Вход", href: "/auth/login" },
-        ]
+        return (
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link href="/jobs">
+              <Button size="lg" className="bg-green-600 hover:bg-green-700">
+                <Plus className="h-5 w-5 mr-2" />
+                Разместить вакансию
+              </Button>
+            </Link>
+            <Link href="/reviews">
+              <Button variant="outline" size="lg">
+                <Star className="h-5 w-5 mr-2" />
+                Управлять отзывами
+              </Button>
+            </Link>
+            <Link href="/profile">
+              <Button variant="outline" size="lg">
+                <Settings className="h-5 w-5 mr-2" />
+                Настроить профиль
+              </Button>
+            </Link>
+          </div>
+        )
+      case "moderator":
+        return (
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link href="/admin">
+              <Button size="lg" className="bg-orange-600 hover:bg-orange-700">
+                <Shield className="h-5 w-5 mr-2" />
+                Панель модерации
+              </Button>
+            </Link>
+            <Link href="/reviews">
+              <Button variant="outline" size="lg">
+                <MessageSquare className="h-5 w-5 mr-2" />
+                Модерировать отзывы
+              </Button>
+            </Link>
+            <Link href="/jobs">
+              <Button variant="outline" size="lg">
+                <Briefcase className="h-5 w-5 mr-2" />
+                Проверить вакансии
+              </Button>
+            </Link>
+          </div>
+        )
+      case "admin":
+        return (
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link href="/admin">
+              <Button size="lg" className="bg-red-600 hover:bg-red-700">
+                <Settings className="h-5 w-5 mr-2" />
+                Админ-панель
+              </Button>
+            </Link>
+            <Link href="/ratings">
+              <Button variant="outline" size="lg">
+                <BarChart3 className="h-5 w-5 mr-2" />
+                Аналитика
+              </Button>
+            </Link>
+            <Link href="/support">
+              <Button variant="outline" size="lg">
+                <HelpCircle className="h-5 w-5 mr-2" />
+                Управление поддержкой
+              </Button>
+            </Link>
+          </div>
+        )
     }
-  }, [role])
+  }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <Header />
-      <main>
-        <section className="relative overflow-hidden bg-gradient-to-b from-primary/10 to-background py-20">
-          <div className="container relative z-10">
-            <div className="mx-auto max-w-3xl text-center">
-              <h1 className="mb-4 text-4xl font-bold tracking-tight sm:text-5xl">
-                {heroTitle}
-              </h1>
-              <p className="mb-8 text-lg text-muted-foreground">
-                {heroDescription}
-              </p>
-              <div className="flex flex-wrap justify-center gap-4">
-                {roleSpecificActions.map((action) => (
-                  <Button key={action.href} asChild>
-                    <a href={action.href}>{action.text}</a>
+
+      {/* Hero Section */}
+      <section className="py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
+              <Zap className="h-4 w-4" />
+              {userRole === "guard" && "Платформа для поиска работы"}
+              {userRole === "chop" && "Платформа для работодателей"}
+              {userRole === "moderator" && "Панель модерации"}
+              {userRole === "admin" && "Административная панель"}
+            </div>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight">
+              {getHeroTitle()}
+            </h1>
+            <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto leading-relaxed">{getHeroDescription()}</p>
+
+            {getRoleSpecificActions()}
+          </div>
+
+          {/* Role-specific search */}
+          {userRole === "guard" && (
+            <div className="max-w-4xl mx-auto mb-8">
+              <Tabs defaultValue="jobs" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-6 bg-white shadow-lg">
+                  <TabsTrigger value="jobs" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                    <Briefcase className="h-4 w-4 mr-2" />
+                    Вакансии
+                  </TabsTrigger>
+                  <TabsTrigger value="chops" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                    <Building2 className="h-4 w-4 mr-2" />
+                    ЧОПы
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="jobs">
+                  <div className="flex gap-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                      <Input
+                        placeholder="Поиск вакансий: должность, зарплата, график..."
+                        className="pl-12 h-14 text-lg border-2 border-gray-200 focus:border-blue-500 shadow-lg"
+                      />
+                    </div>
+                    <Button size="lg" className="h-14 px-8 bg-blue-600 hover:bg-blue-700">
+                      Найти работу
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="chops">
+                  <div className="flex gap-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                      <Input
+                        placeholder="Поиск ЧОПов по названию, ИНН, лицензии, городу..."
+                        className="pl-12 h-14 text-lg border-2 border-gray-200 focus:border-blue-500 shadow-lg"
+                      />
+                    </div>
+                    <Button size="lg" className="h-14 px-8 bg-green-600 hover:bg-green-700">
+                      Найти ЧОП
+                    </Button>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+          )}
+
+          {userRole === "chop" && (
+            <div className="max-w-2xl mx-auto mb-8">
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="text-lg font-semibold mb-4">Быстрые действия</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <Button className="h-12 bg-green-600 hover:bg-green-700">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Новая вакансия
                   </Button>
+                  <Button variant="outline" className="h-12">
+                    <Users className="h-4 w-4 mr-2" />
+                    Найти сотрудников
+                  </Button>
+                  <Button variant="outline" className="h-12">
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Статистика
+                  </Button>
+                  <Button variant="outline" className="h-12">
+                    <Star className="h-4 w-4 mr-2" />
+                    Отзывы
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Stats - адаптированные под роль */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+            {userRole === "guard" && (
+              <>
+                <Card className="text-center border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all">
+                  <CardContent className="pt-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <Briefcase className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">234</div>
+                    <div className="text-sm text-gray-600">Активных вакансий</div>
+                    <div className="text-xs text-green-600 mt-1">+23% за месяц</div>
+                  </CardContent>
+                </Card>
+                <Card className="text-center border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all">
+                  <CardContent className="pt-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-teal-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <Building2 className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">1,247</div>
+                    <div className="text-sm text-gray-600">Проверенных ЧОПов</div>
+                    <div className="text-xs text-green-600 mt-1">+12% за месяц</div>
+                  </CardContent>
+                </Card>
+                <Card className="text-center border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all">
+                  <CardContent className="pt-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <TrendingUp className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">45,000 ₽</div>
+                    <div className="text-sm text-gray-600">Средняя зарплата</div>
+                    <div className="text-xs text-green-600 mt-1">+5% за месяц</div>
+                  </CardContent>
+                </Card>
+                <Card className="text-center border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all">
+                  <CardContent className="pt-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-red-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <Users className="h-6 w-6 text-orange-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">89%</div>
+                    <div className="text-sm text-gray-600">Успешных трудоустройств</div>
+                    <div className="text-xs text-green-600 mt-1">+2% за месяц</div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
+            {userRole === "chop" && (
+              <>
+                <Card className="text-center border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all">
+                  <CardContent className="pt-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-teal-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <Briefcase className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">12</div>
+                    <div className="text-sm text-gray-600">Ваших вакансий</div>
+                    <div className="text-xs text-green-600 mt-1">+3 за месяц</div>
+                  </CardContent>
+                </Card>
+                <Card className="text-center border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all">
+                  <CardContent className="pt-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <Users className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">156</div>
+                    <div className="text-sm text-gray-600">Откликов получено</div>
+                    <div className="text-xs text-green-600 mt-1">+45 за неделю</div>
+                  </CardContent>
+                </Card>
+                <Card className="text-center border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all">
+                  <CardContent className="pt-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <Star className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">4.8</div>
+                    <div className="text-sm text-gray-600">Рейтинг компании</div>
+                    <div className="text-xs text-green-600 mt-1">+0.2 за месяц</div>
+                  </CardContent>
+                </Card>
+                <Card className="text-center border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all">
+                  <CardContent className="pt-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-red-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <MessageSquare className="h-6 w-6 text-orange-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">23</div>
+                    <div className="text-sm text-gray-600">Новых отзывов</div>
+                    <div className="text-xs text-green-600 mt-1">+8 за неделю</div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+
+            {(userRole === "moderator" || userRole === "admin") && (
+              <>
+                <Card className="text-center border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all">
+                  <CardContent className="pt-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-orange-100 to-red-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <AlertTriangle className="h-6 w-6 text-orange-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">23</div>
+                    <div className="text-sm text-gray-600">На модерации</div>
+                    <div className="text-xs text-orange-600 mt-1">Требует внимания</div>
+                  </CardContent>
+                </Card>
+                <Card className="text-center border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all">
+                  <CardContent className="pt-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-100 to-teal-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <CheckCircle className="h-6 w-6 text-green-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">156</div>
+                    <div className="text-sm text-gray-600">Одобрено сегодня</div>
+                    <div className="text-xs text-green-600 mt-1">+12% эффективность</div>
+                  </CardContent>
+                </Card>
+                <Card className="text-center border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all">
+                  <CardContent className="pt-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <Users className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">15,678</div>
+                    <div className="text-sm text-gray-600">Активных пользователей</div>
+                    <div className="text-xs text-green-600 mt-1">+18% за месяц</div>
+                  </CardContent>
+                </Card>
+                <Card className="text-center border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all">
+                  <CardContent className="pt-6">
+                    <div className="w-12 h-12 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                      <BarChart3 className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div className="text-2xl font-bold text-gray-900">98.5%</div>
+                    <div className="text-sm text-gray-600">Uptime системы</div>
+                    <div className="text-xs text-green-600 mt-1">Стабильно</div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Featured Companies */}
+      <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between mb-12">
+            <div>
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">Топ охранных компаний</h2>
+              <p className="text-xl text-gray-600">Лидеры отрасли по рейтингам и отзывам</p>
+            </div>
+            <Link href="/ratings">
+              <Button variant="outline" className="bg-white shadow-sm hover:shadow-lg">
+                Все рейтинги
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {featuredChops.map((chop, index) => (
+              <ChopCard key={chop.id} chop={chop} viewMode="grid" showRank={index === 0} />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Activity Feed */}
+      <section className="py-20 bg-white">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-12">
+            {/* Recent Activity */}
+            <div>
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-8 h-8 bg-gradient-to-br from-green-100 to-teal-100 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">Активность платформы</h3>
+              </div>
+
+              <div className="space-y-4">
+                {recentActivity.map((activity, index) => (
+                  <Card key={index} className="border-0 shadow-sm bg-white hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <div
+                          className={`w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center ${activity.color}`}
+                        >
+                          <activity.icon className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900 mb-1">{activity.title}</h4>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <Clock className="h-3 w-3" />
+                            <span>{activity.time}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
+              </div>
+
+              <div className="mt-6">
+                <Link href="/activity">
+                  <Button variant="outline" className="w-full">
+                    Вся активность
+                    <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Platform Benefits */}
+            <div>
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-purple-100 rounded-lg flex items-center justify-center">
+                  <Zap className="h-5 w-5 text-blue-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">Преимущества платформы</h3>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Shield className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Проверенная информация</h4>
+                    <p className="text-gray-600 text-sm">Все данные о компаниях проходят модерацию и верификацию</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-green-100 to-green-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <BarChart3 className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Честные рейтинги</h4>
+                    <p className="text-gray-600 text-sm">Независимые рейтинги на основе реальных отзывов клиентов</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-100 to-purple-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Users className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Активное сообщество</h4>
+                    <p className="text-gray-600 text-sm">Форум профессионалов отрасли для обмена опытом</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-orange-100 to-orange-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Briefcase className="h-5 w-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 mb-2">Рынок труда</h4>
+                    <p className="text-gray-600 text-sm">Актуальные вакансии и резюме в сфере охранной деятельности</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <ModulesSection />
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-16">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-5 gap-8 mb-12">
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-3 mb-6">
+                <Shield className="h-8 w-8 text-blue-400" />
+                <div>
+                  <span className="text-2xl font-bold">Охрана РФ</span>
+                  <p className="text-sm text-gray-400">Модульная платформа</p>
+                </div>
+              </div>
+              <p className="text-gray-400 mb-6 leading-relaxed">
+                Единая экосистема охранной отрасли России. 12 интегрированных модулей для поиска ЧОПов, работы,
+                рейтингов и управления безопасностью.
+              </p>
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                >
+                  <Bell className="h-4 w-4 mr-2" />
+                  Подписаться
+                </Button>
+              </div>
+            </div>
 
-        <section className="py-12">
-          <div className="container">
-            <h2 className="mb-8 text-3xl font-bold">Популярные ЧОПы</h2>
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {featuredChops.map((chop) => (
-                <ChopCard key={chop.id} {...chop} />
-              ))}
+            <div>
+              <h4 className="font-semibold mb-4 text-white">Основные модули</h4>
+              <ul className="space-y-3 text-gray-400 text-sm">
+                <li>
+                  <Link href="/chops" className="hover:text-white transition-colors">
+                    Каталог ЧОПов
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/ratings" className="hover:text-white transition-colors">
+                    Рейтинги
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/reviews" className="hover:text-white transition-colors">
+                    Отзывы и жалобы
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/jobs" className="hover:text-white transition-colors">
+                    Работа и резюме
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/map" className="hover:text-white transition-colors">
+                    Карта
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-4 text-white">Сервисы</h4>
+              <ul className="space-y-3 text-gray-400 text-sm">
+                <li>
+                  <Link href="/forum" className="hover:text-white transition-colors">
+                    Форум
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/news" className="hover:text-white transition-colors">
+                    Новости
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/notifications" className="hover:text-white transition-colors">
+                    Уведомления
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/search" className="hover:text-white transition-colors">
+                    Поиск
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/support" className="hover:text-white transition-colors">
+                    Поддержка
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-semibold mb-4 text-white">Контакты</h4>
+              <ul className="space-y-3 text-gray-400 text-sm">
+                <li className="flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  <span>info@ohrana-rf.ru</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  <span>+7 (495) 123-45-67</span>
+                </li>
+                <li>
+                  <Link href="/support" className="hover:text-white transition-colors">
+                    Центр поддержки
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/feedback" className="hover:text-white transition-colors">
+                    Обратная связь
+                  </Link>
+                </li>
+              </ul>
             </div>
           </div>
-        </section>
-      </main>
+
+          <div className="border-t border-gray-800 pt-8 text-center text-gray-400">
+            <p>&copy; 2024 Охрана РФ. Модульная платформа охранной отрасли. Все права защищены.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

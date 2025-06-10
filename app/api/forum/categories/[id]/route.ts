@@ -2,12 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
 
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const cookieStore = await cookies()
+    const cookieStore = cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -61,12 +58,9 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const cookieStore = await cookies()
+    const cookieStore = cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -94,11 +88,7 @@ export async function DELETE(
     }
 
     // Проверяем, есть ли темы в этой категории
-    const { data: topics } = await supabase
-      .from("forum_topics")
-      .select("id")
-      .eq("category_id", params.id)
-      .limit(1)
+    const { data: topics } = await supabase.from("forum_topics").select("id").eq("category_id", params.id).limit(1)
 
     if (topics && topics.length > 0) {
       return NextResponse.json({ error: "Нельзя удалить категорию с существующими темами" }, { status: 400 })

@@ -1,22 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient as createSupabaseServerClient } from "@supabase/ssr"
-import { cookies } from "next/headers"
+import { createClient } from "@/lib/supabase/server"
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createSupabaseServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-        },
-      },
-    )
-
+    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
 
     const category = searchParams.get("category")
@@ -40,49 +27,30 @@ export async function GET(request: NextRequest) {
     }
 
     if (limit) {
-      const limitNum = Number.parseInt(limit)
-      if (!isNaN(limitNum)) {
-        query = query.limit(limitNum)
-      }
+      query = query.limit(Number.parseInt(limit))
     }
 
     if (offset) {
-      const offsetNum = Number.parseInt(offset)
-      const limitNum = Number.parseInt(limit || "10")
-      if (!isNaN(offsetNum) && !isNaN(limitNum)) {
-        query = query.range(offsetNum, offsetNum + limitNum - 1)
-      }
+      query = query.range(Number.parseInt(offset), Number.parseInt(offset) + (Number.parseInt(limit) || 10) - 1)
     }
 
     const { data, error } = await query
 
     if (error) {
-      console.error("Ошибка получения новостей:", error)
+      console.error("Error fetching news:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ data })
   } catch (error) {
-    console.error("Непредвиденная ошибка:", error)
-    return NextResponse.json({ error: "Внутренняя ошибка сервера" }, { status: 500 })
+    console.error("Unexpected error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const supabase = createSupabaseServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-        },
-      },
-    )
-
+    const supabase = await createClient()
     const body = await request.json()
 
     // Проверяем права доступа
@@ -90,13 +58,13 @@ export async function POST(request: NextRequest) {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user) {
-      return NextResponse.json({ error: "Не авторизован" }, { status: 401 })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
 
     if (!profile || profile.role !== "admin") {
-      return NextResponse.json({ error: "Недостаточно прав" }, { status: 403 })
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
     // Создаем slug из заголовка
@@ -117,13 +85,13 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabase.from("news").insert(newsData).select().single()
 
     if (error) {
-      console.error("Ошибка создания новости:", error)
+      console.error("Error creating news:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ data })
   } catch (error) {
-    console.error("Непредвиденная ошибка:", error)
-    return NextResponse.json({ error: "Внутренняя ошибка сервера" }, { status: 500 })
+    console.error("Unexpected error:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
