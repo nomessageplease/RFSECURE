@@ -85,9 +85,9 @@ export default function Header() {
     <header className="bg-white border-b sticky top-0 z-40">
       <div className="container mx-auto px-4 flex items-center justify-between h-16">
         <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2" aria-label="Перейти на главную страницу">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <Shield className="h-5 w-5 text-white" />
+              <Shield className="h-5 w-5 text-white" aria-hidden="true" />
             </div>
             <div>
               <span className="font-bold text-lg">Охрана РФ</span>
@@ -95,7 +95,7 @@ export default function Header() {
             </div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-1" role="navigation" aria-label="Основная навигация">
             {navItems.map((item) => (
               <Link
                 key={item.path}
@@ -105,6 +105,7 @@ export default function Header() {
                     ? "text-blue-700 bg-blue-50"
                     : "text-gray-700 hover:text-blue-700 hover:bg-gray-50"
                 }`}
+                aria-current={isActive(item.path) ? "page" : undefined}
               >
                 {item.name}
               </Link>
@@ -115,14 +116,19 @@ export default function Header() {
         <div className="flex items-center gap-2">
           {showAuthorized ? (
             <>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              <Button variant="ghost" size="icon" className="relative" aria-label="Уведомления (3 новых)">
+                <Bell className="h-5 w-5" aria-hidden="true" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" aria-hidden="true"></span>
+                <span className="sr-only">У вас 3 новых уведомления</span>
               </Button>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    className="flex items-center gap-2"
+                    aria-label={`Меню пользователя ${displayName || "Пользователь"}`}
+                  >
                     <Avatar className="h-8 w-8">
                       <AvatarFallback>{getAvatarFallback()}</AvatarFallback>
                     </Avatar>
@@ -130,7 +136,7 @@ export default function Header() {
                       <div className="text-sm font-medium">{displayName || "Пользователь"}</div>
                       {profile?.role && <RoleBadge role={profile.role} className="text-xs" />}
                     </div>
-                    <ChevronDown className="h-4 w-4 text-gray-500" />
+                    <ChevronDown className="h-4 w-4 text-gray-500" aria-hidden="true" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -138,34 +144,36 @@ export default function Header() {
                   <DropdownMenuSeparator />
                   <Link href="/profile">
                     <DropdownMenuItem>
-                      <User className="mr-2 h-4 w-4" />
+                      <User className="mr-2 h-4 w-4" aria-hidden="true" />
                       <span>Профиль</span>
                     </DropdownMenuItem>
                   </Link>
                   <Link href="/notifications">
                     <DropdownMenuItem>
-                      <Bell className="mr-2 h-4 w-4" />
+                      <Bell className="mr-2 h-4 w-4" aria-hidden="true" />
                       <span>Уведомления</span>
-                      <Badge className="ml-auto bg-red-500 text-white text-xs">3</Badge>
+                      <Badge className="ml-auto bg-red-500 text-white text-xs" aria-label="3 новых уведомления">
+                        3
+                      </Badge>
                     </DropdownMenuItem>
                   </Link>
                   {profile?.role === "admin" && (
                     <Link href="/admin/dashboard">
                       <DropdownMenuItem>
-                        <Shield className="mr-2 h-4 w-4" />
+                        <Shield className="mr-2 h-4 w-4" aria-hidden="true" />
                         <span>Админ-панель</span>
                       </DropdownMenuItem>
                     </Link>
                   )}
                   <Link href="/settings">
                     <DropdownMenuItem>
-                      <Settings className="mr-2 h-4 w-4" />
+                      <Settings className="mr-2 h-4 w-4" aria-hidden="true" />
                       <span>Настройки</span>
                     </DropdownMenuItem>
                   </Link>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
+                    <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />
                     <span>Выйти</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -181,23 +189,35 @@ export default function Header() {
               </Link>
             </>
           ) : showLoading ? (
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 bg-gray-200 animate-pulse rounded-full"></div>
-              <div className="h-4 w-20 bg-gray-200 animate-pulse rounded"></div>
+            <div className="flex items-center gap-2" aria-label="Загрузка данных пользователя">
+              <div className="h-8 w-8 bg-gray-200 animate-pulse rounded-full" aria-hidden="true"></div>
+              <div className="h-4 w-20 bg-gray-200 animate-pulse rounded" aria-hidden="true"></div>
             </div>
           ) : null}
 
-          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label={mobileMenuOpen ? "Закрыть мобильное меню" : "Открыть мобильное меню"}
+            aria-expanded={mobileMenuOpen}
+            aria-controls="mobile-menu"
+          >
+            {mobileMenuOpen ? (
+              <X className="h-5 w-5" aria-hidden="true" />
+            ) : (
+              <Menu className="h-5 w-5" aria-hidden="true" />
+            )}
           </Button>
         </div>
       </div>
 
       {/* Mobile menu */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-white border-t">
+        <div className="md:hidden bg-white border-t" id="mobile-menu">
           <div className="container mx-auto px-4 py-3">
-            <nav className="flex flex-col gap-2">
+            <nav className="flex flex-col gap-2" role="navigation" aria-label="Мобильная навигация">
               {navItems.map((item) => (
                 <Link
                   key={item.path}
@@ -208,6 +228,7 @@ export default function Header() {
                       : "text-gray-700 hover:text-blue-700 hover:bg-gray-50"
                   }`}
                   onClick={() => setMobileMenuOpen(false)}
+                  aria-current={isActive(item.path) ? "page" : undefined}
                 >
                   {item.name}
                 </Link>
