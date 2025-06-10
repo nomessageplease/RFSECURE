@@ -3,37 +3,22 @@ import type { Profile } from "@/lib/supabase/types"
 
 const supabase = createClient()
 
-export async function signUp(email: string, password: string, fullName?: string, role?: string) {
+export async function signIn(email: string, password: string) {
   try {
-    console.log("Попытка регистрации:", { email, fullName, role })
-
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
-      options: fullName
-        ? {
-            data: {
-              full_name: fullName,
-              role: role || "guard",
-            },
-          }
-        : undefined,
     })
 
-    console.log("Результат регистрации:", { data, error })
-    return { data, error }
-  } catch (error) {
-    console.error("Неожиданная ошибка при регистрации:", error)
-    return { data: null, error: error as Error }
-  }
-}
+    if (error) {
+      console.error("Ошибка входа:", error)
+    }
 
-export async function signIn(email: string, password: string) {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
-  return { data, error }
+    return { data, error }
+  } catch (err) {
+    console.error("Неожиданная ошибка при входе:", err)
+    return { data: null, error: err as Error }
+  }
 }
 
 export async function signOut() {

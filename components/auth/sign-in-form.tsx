@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { signIn } from "next-auth/react"
+import { createClient } from "@/lib/supabase/client"
 import { useState } from "react"
 import { useSearchParams } from "next/navigation"
 
@@ -34,22 +34,22 @@ export function SignInForm() {
 
   async function handleSubmit(values: z.infer<typeof formSchema>) {
     setError(null)
-    const signInResponse = await signIn("credentials", {
+
+    const supabase = createClient()
+
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: values.email,
       password: values.password,
-      redirect: false,
     })
 
-    if (signInResponse?.error) {
-      setError("Invalid email or password.")
+    if (error) {
+      setError("Неверный email или пароль")
+      return
     }
 
     // После успешного входа
-    if (!error) {
-      // Перенаправляем на страницу, с которой пришел пользователь, или на главную
-      const redirectTo = searchParams.get("redirectedFrom") || "/"
-      window.location.href = redirectTo
-    }
+    const redirectTo = searchParams.get("redirectedFrom") || "/"
+    window.location.href = redirectTo
   }
 
   return (

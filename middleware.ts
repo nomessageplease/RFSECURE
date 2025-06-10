@@ -30,11 +30,29 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   // Защищаем админские страницы
-  if (!user && request.nextUrl.pathname.startsWith("/admin")) {
-    const redirectUrl = request.nextUrl.clone()
-    redirectUrl.pathname = "/auth/sign-in"
-    redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname)
-    return NextResponse.redirect(redirectUrl)
+  if (request.nextUrl.pathname.startsWith("/admin")) {
+    if (!user) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = "/auth/sign-in"
+      redirectUrl.searchParams.set("redirectedFrom", request.nextUrl.pathname)
+      return NextResponse.redirect(redirectUrl)
+    }
+
+    // Проверяем роль пользователя для админских страниц
+    try {
+      const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single()
+
+      if (!profile || !["admin", "moderator"].includes(profile.role)) {
+        const redirectUrl = request.nextUrl.clone()
+        redirectUrl.pathname = "/"
+        return NextResponse.redirect(redirectUrl)
+      }
+    } catch (error) {
+      console.error("Ошибка проверки роли:", error)
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = "/"
+      return NextResponse.redirect(redirectUrl)
+    }
   }
 
   // Перенаправляем авторизованных пользователей с auth страниц только если они пытаются зайти на них напрямую

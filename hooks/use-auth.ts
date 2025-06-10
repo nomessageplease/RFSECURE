@@ -10,7 +10,12 @@ interface Profile {
   role: "guard" | "admin" | "moderator" | "chop_hr"
   full_name?: string
   phone?: string
+  avatar_url?: string
+  bio?: string
+  experience?: string
+  location?: string
   created_at: string
+  updated_at?: string
 }
 
 export function useAuth() {
@@ -214,6 +219,38 @@ export function useAuth() {
     loading,
     error,
     initialized,
+    signUp: async (email: string, password: string, fullName?: string, role?: string) => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: fullName
+            ? {
+                data: {
+                  full_name: fullName,
+                  role: role || "guard",
+                },
+              }
+            : undefined,
+        })
+
+        if (error) {
+          setError(error.message)
+          return { data: null, error }
+        }
+
+        return { data, error: null }
+      } catch (err) {
+        const errorMessage = "Ошибка при регистрации"
+        setError(errorMessage)
+        return { data: null, error: new Error(errorMessage) }
+      } finally {
+        setLoading(false)
+      }
+    },
     signOut,
     updateProfile,
     isAdmin: profile?.role === "admin",

@@ -53,6 +53,7 @@ export function SignUpForm() {
 
     console.log("Отправка формы регистрации:", { email, fullName, role })
 
+    // Использовать signUp из хука useAuth вместо импортированной функции
     const { data, error } = await signUp(email, password, fullName, role)
 
     if (error) {
