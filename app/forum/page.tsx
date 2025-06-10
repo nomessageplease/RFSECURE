@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useUserRole } from "@/components/user-role-switcher"
 import {
   MessageSquare,
@@ -9,10 +9,8 @@ import {
   Pin,
   Clock,
   Eye,
-  ThumbsUp,
   Search,
   Shield,
-  Filter,
   Bell,
   Award,
   ArrowRight,
@@ -31,69 +29,36 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import Header from "@/components/header"
+import { useRouter } from "next/navigation"
 
-const categories = [
-  {
-    id: 1,
-    name: "Общие вопросы",
-    description: "Общие вопросы о работе охранных компаний",
-    topics: 456,
-    posts: 3421,
-    icon: Shield,
-    color: "bg-blue-100 text-blue-700",
-    lastPost: {
-      title: "Как выбрать надежную охранную компанию?",
-      author: "Михаил К.",
-      time: "2 часа назад",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-  },
-  {
-    id: 2,
-    name: "Отзывы и рекомендации",
-    description: "Делитесь опытом работы с охранными компаниями",
-    topics: 789,
-    posts: 5643,
-    icon: ThumbsUp,
-    color: "bg-green-100 text-green-700",
-    lastPost: {
-      title: "Опыт работы с Альфа-Безопасность",
-      author: "Елена С.",
-      time: "1 час назад",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-  },
-  {
-    id: 3,
-    name: "Правовые вопросы",
-    description: "Юридические аспекты охранной деятельности",
-    topics: 234,
-    posts: 1876,
-    icon: Filter,
-    color: "bg-purple-100 text-purple-700",
-    lastPost: {
-      title: "Ответственность охранной компании за ущерб",
-      author: "Дмитрий П.",
-      time: "3 часа назад",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-  },
-  {
-    id: 4,
-    name: "Технические средства",
-    description: "Обсуждение охранного оборудования и технологий",
-    topics: 345,
-    posts: 2134,
-    icon: Bell,
-    color: "bg-orange-100 text-orange-700",
-    lastPost: {
-      title: "Новые системы видеонаблюдения",
-      author: "Андрей В.",
-      time: "5 часов назад",
-      avatar: "/placeholder.svg?height=40&width=40",
-    },
-  },
-]
+interface ForumCategory {
+  id: number
+  name: string
+  description: string
+  topics: number
+  posts: number
+  icon: any // You might want to define a more specific type for icons
+  color: string
+  lastPost: {
+    title: string
+    author: string
+    time: string
+    avatar: string
+  }
+}
+
+interface ForumTopic {
+  id: number
+  title: string
+  author: string
+  authorAvatar: string
+  replies: number
+  views: number
+  lastReply: string
+  isPinned: boolean
+  isHot: boolean
+  status: string
+}
 
 const hotTopics = [
   {
@@ -157,6 +122,34 @@ const activeUsers = [
 export default function ForumPage() {
   const { userRole } = useUserRole()
   const [activeTab, setActiveTab] = useState("categories")
+  const [categories, setCategories] = useState<ForumCategory[]>([])
+  const [topics, setTopics] = useState<ForumTopic[]>([])
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
+
+  useEffect(() => {
+    fetchForumData()
+  }, [])
+
+  const fetchForumData = async () => {
+    try {
+      setLoading(true)
+
+      // Загружаем категории
+      const categoriesResponse = await fetch("/api/forum/categories")
+      const categoriesData = await categoriesResponse.json()
+      setCategories(categoriesData.categories || [])
+
+      // Загружаем последние темы
+      const topicsResponse = await fetch("/api/forum/topics?limit=10")
+      const topicsData = await topicsResponse.json()
+      setTopics(topicsData.topics || [])
+    } catch (error) {
+      console.error("Ошибка загрузки данных форума:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const getPageTitle = () => {
     switch (userRole) {
@@ -377,6 +370,17 @@ export default function ForumPage() {
     return topic.status === "active"
   })
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center">Загрузка форума...</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
@@ -493,6 +497,7 @@ export default function ForumPage() {
                       <Card
                         key={category.id}
                         className="group hover:shadow-lg transition-all duration-200 border-0 shadow-sm bg-white cursor-pointer"
+                        onClick={() => router.push(`/forum/${category.id}`)}
                       >
                         <CardContent className="p-6">
                           <div className="flex items-start gap-4">
@@ -535,10 +540,11 @@ export default function ForumPage() {
               {/* Последние темы */}
               <TabsContent value="recent" className="space-y-6">
                 <div className="space-y-4">
-                  {filteredTopics.map((topic) => (
+                  {topics.map((topic) => (
                     <Card
                       key={topic.id}
                       className="group hover:shadow-lg transition-all duration-200 border-0 shadow-sm bg-white cursor-pointer"
+                      onClick={() => router.push(`/forum/topic/${topic.id}`)}
                     >
                       <CardContent className="p-6">
                         <div className="flex items-start gap-4">

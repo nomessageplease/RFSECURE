@@ -45,6 +45,141 @@ export type Database = {
           updated_at?: string
         }
       }
+      forum_categories: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          icon: string | null
+          color: string
+          sort_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          icon?: string | null
+          color?: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          icon?: string | null
+          color?: string
+          sort_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      forum_topics: {
+        Row: {
+          id: string
+          category_id: string
+          title: string
+          content: string
+          author_id: string
+          author_name: string
+          is_pinned: boolean
+          is_locked: boolean
+          is_hot: boolean
+          status: "active" | "pending" | "archived" | "deleted"
+          views: number
+          replies_count: number
+          last_reply_at: string
+          last_reply_by: string | null
+          last_reply_author: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          category_id: string
+          title: string
+          content: string
+          author_id: string
+          author_name: string
+          is_pinned?: boolean
+          is_locked?: boolean
+          is_hot?: boolean
+          status?: "active" | "pending" | "archived" | "deleted"
+          views?: number
+          replies_count?: number
+          last_reply_at?: string
+          last_reply_by?: string | null
+          last_reply_author?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          category_id?: string
+          title?: string
+          content?: string
+          author_id?: string
+          author_name?: string
+          is_pinned?: boolean
+          is_locked?: boolean
+          is_hot?: boolean
+          status?: "active" | "pending" | "archived" | "deleted"
+          views?: number
+          replies_count?: number
+          last_reply_at?: string
+          last_reply_by?: string | null
+          last_reply_author?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      forum_posts: {
+        Row: {
+          id: string
+          topic_id: string
+          author_id: string
+          author_name: string
+          content: string
+          is_edited: boolean
+          edited_at: string | null
+          edited_by: string | null
+          status: "active" | "pending" | "deleted"
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          topic_id: string
+          author_id: string
+          author_name: string
+          content: string
+          is_edited?: boolean
+          edited_at?: string | null
+          edited_by?: string | null
+          status?: "active" | "pending" | "deleted"
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          topic_id?: string
+          author_id?: string
+          author_name?: string
+          content?: string
+          is_edited?: boolean
+          edited_at?: string | null
+          edited_by?: string | null
+          status?: "active" | "pending" | "deleted"
+          created_at?: string
+          updated_at?: string
+        }
+      }
       chops: {
         Row: {
           id: string
@@ -392,3 +527,6 @@ export type Chop = Database["public"]["Tables"]["chops"]["Row"]
 export type ChopConnectionRequest = Database["public"]["Tables"]["chop_connection_requests"]["Row"]
 export type ChopHrAssignment = Database["public"]["Tables"]["chop_hr_assignments"]["Row"]
 export type News = Database["public"]["Tables"]["news"]["Row"]
+export type ForumCategory = Database["public"]["Tables"]["forum_categories"]["Row"]
+export type ForumTopic = Database["public"]["Tables"]["forum_topics"]["Row"]
+export type ForumPost = Database["public"]["Tables"]["forum_posts"]["Row"]

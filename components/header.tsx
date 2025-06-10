@@ -1,5 +1,7 @@
 "use client"
 
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
+
 import type React from "react"
 
 import { useState, useEffect } from "react"
@@ -11,7 +13,6 @@ import { Badge } from "@/components/ui/badge"
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
@@ -32,10 +33,19 @@ export default function Header() {
   const pathname = usePathname()
   const router = useRouter()
   const { user, profile, signOut, loading } = useAuth()
+  const [displayName, setDisplayName] = useState<string>("")
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  useEffect(() => {
+    if (profile?.full_name) {
+      setDisplayName(profile.full_name)
+    } else if (user?.email && !displayName) {
+      setDisplayName(user.email.split("@")[0])
+    }
+  }, [profile?.full_name, user?.email, displayName])
 
   const handleSignOut = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -121,13 +131,13 @@ export default function Header() {
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm" className="flex items-center gap-2">
                           <User className="h-4 w-4" />
-                          <span className="hidden sm:inline">{profile?.full_name || user.email}</span>
+                          <span className="hidden sm:inline">{displayName || "Пользователь"}</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-56">
                         <div className="px-2 py-1.5">
-                          <p className="text-sm font-medium">{profile?.full_name || "Пользователь"}</p>
-                          <p className="text-xs text-gray-500">{user.email}</p>
+                          <p className="text-sm font-medium">{displayName || "Пользователь"}</p>
+                          <p className="text-xs text-gray-500">{user?.email}</p>
                           {profile?.role && (
                             <Badge variant="outline" className="mt-1 text-xs">
                               {profile.role === "admin"
