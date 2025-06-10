@@ -520,7 +520,22 @@ export type Database = {
   }
 }
 
-export type Profile = Database["public"]["Tables"]["profiles"]["Row"]
+export type Profile = {
+  id: string
+  email: string
+  full_name: string | null
+  avatar_url: string | null
+  role: "user" | "guard" | "chop" | "chop_hr" | "moderator" | "admin"
+  phone: string | null
+  city: string | null
+  company_name: string | null
+  created_at: string
+  updated_at: string
+  last_sign_in_at: string | null
+  is_verified: boolean
+  is_active: boolean
+}
+
 export type Job = Database["public"]["Tables"]["jobs"]["Row"]
 export type JobApplication = Database["public"]["Tables"]["job_applications"]["Row"]
 export type Chop = Database["public"]["Tables"]["chops"]["Row"]

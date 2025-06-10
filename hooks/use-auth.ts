@@ -3,15 +3,10 @@
 import { useEffect, useState, useCallback } from "react"
 import { createClient } from "@/lib/supabase/client"
 import type { User } from "@supabase/supabase-js"
+import type { Profile } from "@/lib/supabase/types"
 
-interface Profile {
-  id: string
-  email: string
-  role: "guard" | "admin" | "moderator" | "chop_hr"
-  full_name?: string
-  phone?: string
-  created_at: string
-}
+const MAX_LOGIN_ATTEMPTS = 5
+const LOCKOUT_DURATION = 15 * 60 * 1000 // 15 минут в миллисекундах
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null)
@@ -19,8 +14,41 @@ export function useAuth() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [initialized, setInitialized] = useState(false)
+  const [loginAttempts, setLoginAttempts] = useState<Record<string, { count: number; timestamp: number }>>({})
 
   const supabase = createClient()
+
+  const isAccountLocked = useCallback((email: string) => {
+    const attempt = loginAttempts[email]
+    if (!attempt) return false
+
+    if (attempt.count >= MAX_LOGIN_ATTEMPTS) {
+      const timeSinceLastAttempt = Date.now() - attempt.timestamp
+      if (timeSinceLastAttempt < LOCKOUT_DURATION) {
+        return true
+      }
+      // Сброс счетчика после истечения времени блокировки
+      setLoginAttempts((prev) => {
+        const newAttempts = { ...prev }
+        delete newAttempts[email]
+        return newAttempts
+      })
+    }
+    return false
+  }, [loginAttempts])
+
+  const recordLoginAttempt = useCallback((email: string, success: boolean) => {
+    setLoginAttempts((prev) => {
+      const current = prev[email] || { count: 0, timestamp: Date.now() }
+      return {
+        ...prev,
+        [email]: {
+          count: success ? 0 : current.count + 1,
+          timestamp: Date.now(),
+        },
+      }
+    })
+  }, [])
 
   const fetchProfile = useCallback(
     async (userId: string): Promise<boolean> => {
@@ -40,13 +68,22 @@ export function useAuth() {
                     email: userData.user.email,
                     role: "guard",
                     full_name: "Пользователь",
+                    avatar_url: null,
+                    phone: null,
+                    city: null,
+                    company_name: null,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    last_sign_in_at: null,
+                    is_verified: false,
+                    is_active: true,
                   },
                 ])
                 .select()
                 .single()
 
               if (createError) {
-                console.error("Profile creation error:", createError)
+                console.error("Ошибка создания профиля:", createError)
                 return false
               } else {
                 setProfile(newProfile)
@@ -54,7 +91,7 @@ export function useAuth() {
               }
             }
           } else {
-            console.error("Profile fetch error:", error)
+            console.error("Ошибка получения профиля:", error)
             return false
           }
         } else {
@@ -63,27 +100,92 @@ export function useAuth() {
         }
         return false
       } catch (err) {
-        console.error("Profile fetch exception:", err)
+        console.error("Исключение при получении профиля:", err)
         return false
       }
     },
     [supabase],
   )
 
+  const signIn = useCallback(
+    async (email: string, password: string) => {
+      try {
+        if (isAccountLocked(email)) {
+          const attempt = loginAttempts[email]
+          const remainingTime = Math.ceil((LOCKOUT_DURATION - (Date.now() - attempt.timestamp)) / 60000)
+          throw new Error(`Аккаунт заблокирован. Попробуйте через ${remainingTime} минут.`)
+        }
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
+
+        if (error) {
+          recordLoginAttempt(email, false)
+          throw error
+        }
+
+        recordLoginAttempt(email, true)
+        return data
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Ошибка входа")
+        throw err
+      }
+    },
+    [isAccountLocked, loginAttempts, recordLoginAttempt],
+  )
+
+  const signUp = useCallback(
+    async (email: string, password: string, fullName?: string, role?: string) => {
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: fullName
+            ? {
+                data: {
+                  full_name: fullName,
+                  role: role || "guard",
+                },
+              }
+            : undefined,
+        })
+
+        if (error) throw error
+        return data
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Ошибка регистрации")
+        throw err
+      }
+    },
+    [],
+  )
+
+  const signOut = useCallback(async () => {
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      setUser(null)
+      setProfile(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ошибка выхода")
+      throw err
+    }
+  }, [supabase])
+
   useEffect(() => {
     let mounted = true
-    const sessionTimeout: NodeJS.Timeout | null = null
 
     const initializeAuth = async () => {
       try {
-        // Получаем текущую сессию
         const {
           data: { session },
           error: sessionError,
         } = await supabase.auth.getSession()
 
         if (sessionError) {
-          console.error("Session error:", sessionError)
+          console.error("Ошибка сессии:", sessionError)
           if (mounted) {
             setError(sessionError.message)
             setUser(null)
@@ -99,13 +201,20 @@ export function useAuth() {
             setUser(session.user)
             const profileSuccess = await fetchProfile(session.user.id)
             if (!profileSuccess) {
-              // Если профиль не загрузился, создаем базовый профиль
               setProfile({
                 id: session.user.id,
                 email: session.user.email || "",
                 role: "guard",
                 full_name: "Пользователь",
+                avatar_url: null,
+                phone: null,
+                city: null,
+                company_name: null,
                 created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                last_sign_in_at: null,
+                is_verified: false,
+                is_active: true,
               })
             }
           } else {
@@ -116,7 +225,7 @@ export function useAuth() {
           setInitialized(true)
         }
       } catch (err) {
-        console.error("Auth initialization error:", err)
+        console.error("Ошибка инициализации авторизации:", err)
         if (mounted) {
           setError("Ошибка инициализации авторизации")
           setUser(null)
@@ -129,67 +238,25 @@ export function useAuth() {
 
     initializeAuth()
 
-    // Подписываемся на изменения состояния авторизации
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return
-
-      console.log("Auth state change:", event, session?.user?.id)
-
-      if (event === "SIGNED_OUT" || !session) {
-        setUser(null)
-        setProfile(null)
-        setError(null)
-        setLoading(false)
-        return
-      }
-
-      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
-        setUser(session.user)
-        setError(null)
-
-        if (session.user) {
-          const profileSuccess = await fetchProfile(session.user.id)
-          if (!profileSuccess) {
-            // Создаем базовый профиль если не удалось загрузить
-            setProfile({
-              id: session.user.id,
-              email: session.user.email || "",
-              role: "guard",
-              full_name: "Пользователь",
-              created_at: new Date().toISOString(),
-            })
-          }
+      if (mounted) {
+        if (session?.user) {
+          setUser(session.user)
+          await fetchProfile(session.user.id)
+        } else {
+          setUser(null)
+          setProfile(null)
         }
-        setLoading(false)
       }
     })
 
     return () => {
       mounted = false
       subscription.unsubscribe()
-      if (sessionTimeout) clearTimeout(sessionTimeout)
     }
-  }, [fetchProfile, supabase.auth])
-
-  const signOut = async () => {
-    try {
-      setLoading(true)
-      const { error } = await supabase.auth.signOut()
-      if (error) {
-        setError(error.message)
-      } else {
-        setUser(null)
-        setProfile(null)
-        setError(null)
-      }
-    } catch (err) {
-      setError("Ошибка при выходе из системы")
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [fetchProfile, supabase])
 
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) return { error: "Пользователь не авторизован" }
@@ -214,6 +281,8 @@ export function useAuth() {
     loading,
     error,
     initialized,
+    signIn,
+    signUp,
     signOut,
     updateProfile,
     isAdmin: profile?.role === "admin",

@@ -7,22 +7,27 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
-import { signIn } from "next-auth/react"
 import { useState } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter } from "next/navigation"
+import { useAuth } from "@/hooks/use-auth"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
 
 const formSchema = z.object({
   email: z.string().email({
-    message: "Please enter a valid email address.",
+    message: "Пожалуйста, введите корректный email адрес.",
   }),
   password: z.string().min(8, {
-    message: "Password must be at least 8 characters.",
+    message: "Пароль должен содержать минимум 8 символов.",
   }),
 })
 
 export function SignInForm() {
   const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const { signIn } = useAuth()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -33,34 +38,36 @@ export function SignInForm() {
   })
 
   async function handleSubmit(values: z.infer<typeof formSchema>) {
-    setError(null)
-    const signInResponse = await signIn("credentials", {
-      email: values.email,
-      password: values.password,
-      redirect: false,
-    })
-
-    if (signInResponse?.error) {
-      setError("Invalid email or password.")
-    }
-
-    // После успешного входа
-    if (!error) {
-      // Перенаправляем на страницу, с которой пришел пользователь, или на главную
+    try {
+      setError(null)
+      setLoading(true)
+      await signIn(values.email, values.password)
+      
+      // После успешного входа
       const redirectTo = searchParams.get("redirectedFrom") || "/"
-      window.location.href = redirectTo
+      router.push(redirectTo)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ошибка входа")
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Sign in</CardTitle>
-        <CardDescription>Enter your email and password to sign in</CardDescription>
+        <CardTitle>Вход в систему</CardTitle>
+        <CardDescription>Введите свои учетные данные для входа</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             <FormField
               control={form.control}
               name="email"
@@ -68,7 +75,7 @@ export function SignInForm() {
                 <FormItem>
                   <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input placeholder="mail@example.com" {...field} />
+                    <Input placeholder="your@email.com" type="email" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -79,17 +86,16 @@ export function SignInForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Password</FormLabel>
+                  <FormLabel>Пароль</FormLabel>
                   <FormControl>
-                    <Input type="password" {...field} />
+                    <Input placeholder="••••••••" type="password" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            {error && <p className="text-red-500">{error}</p>}
-            <Button type="submit" className="w-full">
-              Sign in
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? "Вход..." : "Войти"}
             </Button>
           </form>
         </Form>
