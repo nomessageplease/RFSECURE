@@ -7,17 +7,13 @@ import {
   Phone,
   Mail,
   Globe,
-  Shield,
   AlertCircle,
   Camera,
-  Check,
-  X,
   Flag,
   MessageSquare,
   Edit,
   Building,
   Users,
-  Clock,
   Briefcase,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -41,6 +37,8 @@ import { Input } from "@/components/ui/input"
 import Link from "next/link"
 import { UserRoleSwitcher, type UserRole } from "@/components/user-role-switcher"
 import { createClient } from "@/lib/supabase/client"
+import { useAuth } from "@/hooks/use-auth"
+import Header from "@/components/header"
 
 // Mock data for reviews and other content that's not in database yet
 const reviews = [
@@ -66,23 +64,6 @@ const reviews = [
       text: "Спасибо за высокую оценку нашей работы! Мы ценим наше сотрудничество и всегда стремимся поддерживать высокий уровень сервиса.",
     },
   },
-  {
-    id: 2,
-    author: "Елена С.",
-    authorType: "Торговый центр",
-    rating: 4,
-    date: "2024-01-10",
-    text: "Хорошая компания, но иногда бывают задержки с заменой охранников при болезни.",
-    verified: true,
-    helpful: 8,
-    ratings: {
-      reliability: 4,
-      professionalism: 5,
-      response: 3,
-      equipment: 4,
-      value: 4,
-    },
-  },
 ]
 
 export default function ChopDetailPage({ params }: { params: { id: string } }) {
@@ -91,6 +72,11 @@ export default function ChopDetailPage({ params }: { params: { id: string } }) {
   const [chopData, setChopData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [editMode, setEditMode] = useState(false)
+  const [editData, setEditData] = useState<any>({})
+  const [saving, setSaving] = useState(false)
+
+  const { user, profile } = useAuth()
 
   useEffect(() => {
     async function loadChopData() {
@@ -179,6 +165,7 @@ export default function ChopDetailPage({ params }: { params: { id: string } }) {
         }
 
         setChopData(transformedData)
+        setEditData(data) // Сохраняем оригинальные данные для редактирования
         console.log("Loaded chop data:", transformedData)
       } catch (err) {
         console.error("Error:", err)
@@ -191,12 +178,55 @@ export default function ChopDetailPage({ params }: { params: { id: string } }) {
     loadChopData()
   }, [params.id])
 
+  const handleSaveEdit = async () => {
+    if (!user || !profile?.role || !["admin", "moderator"].includes(profile.role)) {
+      alert("У вас нет прав для редактирования")
+      return
+    }
+
+    setSaving(true)
+    try {
+      const supabase = createClient()
+
+      const { error } = await supabase
+        .from("chops")
+        .update({
+          name: editData.name,
+          description: editData.description,
+          address: editData.address,
+          phone: editData.phone,
+          email: editData.email,
+          website: editData.website,
+          license_number: editData.license_number,
+          employees_count: editData.employees_count ? Number.parseInt(editData.employees_count) : null,
+        })
+        .eq("id", params.id)
+
+      if (error) {
+        console.error("Error updating chop:", error)
+        alert("Ошибка при сохранении изменений")
+        return
+      }
+
+      // Перезагружаем данные
+      window.location.reload()
+    } catch (error) {
+      console.error("Error:", error)
+      alert("Произошла ошибка при сохранении")
+    } finally {
+      setSaving(false)
+    }
+  }
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Загрузка данных ЧОПа...</p>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Загрузка данных ЧОПа...</p>
+          </div>
         </div>
       </div>
     )
@@ -204,14 +234,17 @@ export default function ChopDetailPage({ params }: { params: { id: string } }) {
 
   if (error || !chopData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">Ошибка</h1>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <Link href="/chops">
-            <Button>Вернуться к списку ЧОПов</Button>
-          </Link>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h1 className="text-xl font-semibold text-gray-900 mb-2">Ошибка</h1>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <Link href="/chops">
+              <Button>Вернуться к списку ЧОПов</Button>
+            </Link>
+          </div>
         </div>
       </div>
     )
@@ -221,44 +254,17 @@ export default function ChopDetailPage({ params }: { params: { id: string } }) {
     return acc + (criterion.score * criterion.weight) / 100
   }, 0)
 
+  const isAdmin = profile?.role === "admin"
+  const isModerator = profile?.role === "moderator"
+  const canEdit = isAdmin || isModerator
+
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Используем общий Header */}
+      <Header />
+
       {/* Кнопка переключения роли пользователя */}
       <UserRoleSwitcher onRoleChange={setUserRole} />
-
-      {/* Header */}
-      <header className="border-b bg-white sticky top-0 z-40">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center h-16">
-            <Link href="/" className="flex items-center gap-2">
-              <Shield className="h-7 w-7 text-blue-600" />
-              <h1 className="text-xl font-bold text-gray-900">Охрана РФ</h1>
-            </Link>
-            <nav className="hidden md:flex items-center gap-4 ml-8">
-              <Link href="/" className="text-gray-700 hover:text-blue-600 text-sm">
-                Главная
-              </Link>
-              <Link href="/chops" className="text-gray-700 hover:text-blue-600 text-sm">
-                Организации
-              </Link>
-              <Link href="/forum" className="text-gray-700 hover:text-blue-600 text-sm">
-                Форум
-              </Link>
-              <Link href="/jobs" className="text-gray-700 hover:text-blue-600 text-sm">
-                Вакансии
-              </Link>
-              <Link href="/news" className="text-gray-700 hover:text-blue-600 text-sm">
-                Новости
-              </Link>
-            </nav>
-            <div className="ml-auto flex items-center gap-3">
-              <Link href="/profile" className="text-gray-700 hover:text-blue-600 text-sm">
-                Личный кабинет
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
 
       {/* Уведомления для разных ролей */}
       {userRole === "moderator" && (
@@ -272,17 +278,6 @@ export default function ChopDetailPage({ params }: { params: { id: string } }) {
             <Button variant="outline" size="sm" className="ml-auto">
               Просмотреть изменения
             </Button>
-          </div>
-        </div>
-      )}
-
-      {userRole === "owner" && chopData.verificationStatus.services === "pending" && (
-        <div className="bg-blue-50 border-l-4 border-blue-500 p-4">
-          <div className="container mx-auto px-4 flex items-center">
-            <Clock className="h-5 w-5 text-blue-500 mr-2" />
-            <p className="text-blue-700">
-              <span className="font-bold">Информация об услугах</span> ожидает проверки модератором.
-            </p>
           </div>
         </div>
       )}
@@ -308,10 +303,15 @@ export default function ChopDetailPage({ params }: { params: { id: string } }) {
                 <div className="flex-1 text-center sm:text-left">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
                     <CardTitle className="text-2xl lg:text-3xl">{chopData.name}</CardTitle>
-                    {userRole === "owner" && (
-                      <Button variant="outline" size="sm" className="h-7 w-fit mx-auto sm:mx-0">
+                    {canEdit && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 w-fit mx-auto sm:mx-0"
+                        onClick={() => setEditMode(!editMode)}
+                      >
                         <Edit className="h-3.5 w-3.5 mr-1" />
-                        Редактировать
+                        {editMode ? "Отменить" : "Редактировать"}
                       </Button>
                     )}
                   </div>
@@ -390,12 +390,10 @@ export default function ChopDetailPage({ params }: { params: { id: string } }) {
                       </DialogContent>
                     </Dialog>
 
-                    {chopData.hasOwner && (
-                      <Button variant="outline" className="w-full">
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        Связаться с компанией
-                      </Button>
-                    )}
+                    <Button variant="outline" className="w-full">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Связаться с компанией
+                    </Button>
 
                     <Button variant="outline" className="w-full">
                       <Flag className="h-4 w-4 mr-2" />
@@ -404,29 +402,107 @@ export default function ChopDetailPage({ params }: { params: { id: string } }) {
                   </>
                 )}
 
-                {userRole === "owner" && (
-                  <Button size="lg" className="w-full">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Редактировать информацию
+                {canEdit && editMode && (
+                  <Button
+                    size="lg"
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    onClick={handleSaveEdit}
+                    disabled={saving}
+                  >
+                    {saving ? "Сохранение..." : "Сохранить изменения"}
                   </Button>
-                )}
-
-                {userRole === "moderator" && (
-                  <>
-                    <Button size="lg" className="bg-green-600 hover:bg-green-700 w-full">
-                      <Check className="h-4 w-4 mr-2" />
-                      Одобрить изменения
-                    </Button>
-                    <Button variant="outline" className="text-red-600 w-full">
-                      <X className="h-4 w-4 mr-2" />
-                      Отклонить изменения
-                    </Button>
-                  </>
                 )}
               </div>
             </div>
           </CardHeader>
         </Card>
+
+        {/* Edit Form */}
+        {editMode && canEdit && (
+          <Card className="mb-8 border-blue-200 bg-blue-50">
+            <CardHeader>
+              <CardTitle className="text-blue-900">Редактирование информации о ЧОПе</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-name">Название</Label>
+                  <Input
+                    id="edit-name"
+                    value={editData.name || ""}
+                    onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-license">Номер лицензии</Label>
+                  <Input
+                    id="edit-license"
+                    value={editData.license_number || ""}
+                    onChange={(e) => setEditData({ ...editData, license_number: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="edit-description">Описание</Label>
+                <Textarea
+                  id="edit-description"
+                  value={editData.description || ""}
+                  onChange={(e) => setEditData({ ...editData, description: e.target.value })}
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-address">Адрес</Label>
+                  <Input
+                    id="edit-address"
+                    value={editData.address || ""}
+                    onChange={(e) => setEditData({ ...editData, address: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-phone">Телефон</Label>
+                  <Input
+                    id="edit-phone"
+                    value={editData.phone || ""}
+                    onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit-email">Email</Label>
+                  <Input
+                    id="edit-email"
+                    value={editData.email || ""}
+                    onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-website">Сайт</Label>
+                  <Input
+                    id="edit-website"
+                    value={editData.website || ""}
+                    onChange={(e) => setEditData({ ...editData, website: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="edit-employees">Количество сотрудников</Label>
+                <Input
+                  id="edit-employees"
+                  type="number"
+                  value={editData.employees_count || ""}
+                  onChange={(e) => setEditData({ ...editData, employees_count: e.target.value })}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Main Content */}
         <Tabs defaultValue="rating" className="space-y-6">

@@ -85,6 +85,7 @@ export default function AdminRequestsPage() {
 
         if (error) throw error
 
+        console.log("Loaded requests:", data)
         setRequests(data || [])
       } catch (error) {
         console.error("Ошибка загрузки заявок:", error)
@@ -247,10 +248,13 @@ export default function AdminRequestsPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Загрузка...</p>
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Загрузка...</p>
+          </div>
         </div>
       </div>
     )
