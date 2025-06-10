@@ -144,218 +144,223 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       <Header />
-
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Page Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-gradient-to-br from-red-100 to-red-200 rounded-xl flex items-center justify-center">
-              <Shield className="h-6 w-6 text-red-600" />
-            </div>
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900">Админ-панель</h1>
-              <p className="text-lg text-gray-600">Управление платформой и модерация контента</p>
+      <main role="main" className="min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4 py-8 max-w-7xl">
+          {/* Page Header */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-red-100 to-red-200 rounded-xl flex items-center justify-center">
+                <Shield className="h-6 w-6 text-red-600" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold text-gray-900">Админ-панель</h1>
+                <p className="text-lg text-gray-600">Управление платформой и модерация контента</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat, index) => (
-            <Card key={index} className="border-0 shadow-sm bg-white hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
-                    <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-                    <p className={`text-sm ${stat.change.startsWith("+") ? "text-green-600" : "text-red-600"} mt-1`}>
-                      {stat.change} за месяц
-                    </p>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {stats.map((stat, index) => (
+              <Card key={index} className="border-0 shadow-sm bg-white hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
+                      <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                      <p className={`text-sm ${stat.change.startsWith("+") ? "text-green-600" : "text-red-600"} mt-1`}>
+                        {stat.change} за месяц
+                      </p>
+                    </div>
+                    <div className={`w-12 h-12 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
+                      <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                    </div>
                   </div>
-                  <div className={`w-12 h-12 ${stat.bgColor} rounded-xl flex items-center justify-center`}>
-                    <stat.icon className={`h-6 w-6 ${stat.color}`} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-        {/* Main Content */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-white shadow-sm">
-            <TabsTrigger value="overview">Обзор</TabsTrigger>
-            <TabsTrigger value="users">Пользователи</TabsTrigger>
-            <TabsTrigger value="moderation">Модерация</TabsTrigger>
-            <TabsTrigger value="content">Контент</TabsTrigger>
-            <TabsTrigger value="create">Создание</TabsTrigger>
-            <TabsTrigger value="settings">Настройки</TabsTrigger>
-          </TabsList>
+          {/* Main Content */}
+          <Tabs defaultValue="overview" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-6 bg-white shadow-sm">
+              <TabsTrigger value="overview">Обзор</TabsTrigger>
+              <TabsTrigger value="users">Пользователи</TabsTrigger>
+              <TabsTrigger value="moderation">Модерация</TabsTrigger>
+              <TabsTrigger value="content">Контент</TabsTrigger>
+              <TabsTrigger value="create">Создание</TabsTrigger>
+              <TabsTrigger value="settings">Настройки</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid lg:grid-cols-2 gap-6">
-              {/* Moderation Queue */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-orange-600" />
-                    Очередь модерации
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {moderationQueue.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium text-gray-900">{item.title}</h4>
-                            <Badge
-                              variant={
-                                item.priority === "high"
-                                  ? "destructive"
+            <TabsContent value="overview" className="space-y-6">
+              <div className="grid lg:grid-cols-2 gap-6">
+                {/* Moderation Queue */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-orange-600" />
+                      Очередь модерации
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {moderationQueue.map((item) => (
+                        <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h4 className="font-medium text-gray-900">{item.title}</h4>
+                              <Badge
+                                variant={
+                                  item.priority === "high"
+                                    ? "destructive"
+                                    : item.priority === "medium"
+                                      ? "default"
+                                      : "secondary"
+                                }
+                                className="text-xs"
+                              >
+                                {item.priority === "high"
+                                  ? "Высокий"
                                   : item.priority === "medium"
-                                    ? "default"
-                                    : "secondary"
-                              }
-                              className="text-xs"
-                            >
-                              {item.priority === "high" ? "Высокий" : item.priority === "medium" ? "Средний" : "Низкий"}
-                            </Badge>
+                                    ? "Средний"
+                                    : "Низкий"}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-600">{item.author}</p>
+                            <p className="text-xs text-gray-500">{item.time}</p>
                           </div>
-                          <p className="text-sm text-gray-600">{item.author}</p>
-                          <p className="text-xs text-gray-500">{item.time}</p>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline">
+                              Отклонить
+                            </Button>
+                            <Button size="sm">Одобрить</Button>
+                          </div>
                         </div>
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline">
-                            Отклонить
-                          </Button>
-                          <Button size="sm">Одобрить</Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
 
-              {/* Recent Activity */}
+                {/* Recent Activity */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Clock className="h-5 w-5 text-blue-600" />
+                      Последняя активность
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {recentActivity.map((activity, index) => (
+                        <div key={index} className="flex items-start gap-3">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-gray-900">{activity.action}</p>
+                            <p className="text-sm text-gray-600">{activity.user}</p>
+                            <p className="text-xs text-gray-500">{activity.time}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* System Health */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Clock className="h-5 w-5 text-blue-600" />
-                    Последняя активность
+                    <BarChart3 className="h-5 w-5 text-green-600" />
+                    Состояние системы
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {recentActivity.map((activity, index) => (
-                      <div key={index} className="flex items-start gap-3">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                          <p className="text-sm text-gray-600">{activity.user}</p>
-                          <p className="text-xs text-gray-500">{activity.time}</p>
-                        </div>
+                  <div className="grid md:grid-cols-3 gap-6">
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">Производительность</span>
+                        <span className="text-sm text-gray-600">98%</span>
                       </div>
-                    ))}
+                      <Progress value={98} className="h-2" />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">Использование памяти</span>
+                        <span className="text-sm text-gray-600">67%</span>
+                      </div>
+                      <Progress value={67} className="h-2" />
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">Активные пользователи</span>
+                        <span className="text-sm text-gray-600">1,234</span>
+                      </div>
+                      <Progress value={85} className="h-2" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            </TabsContent>
 
-            {/* System Health */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-green-600" />
-                  Состояние системы
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid md:grid-cols-3 gap-6">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Производительность</span>
-                      <span className="text-sm text-gray-600">98%</span>
-                    </div>
-                    <Progress value={98} className="h-2" />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Использование памяти</span>
-                      <span className="text-sm text-gray-600">67%</span>
-                    </div>
-                    <Progress value={67} className="h-2" />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Активные пользователи</span>
-                      <span className="text-sm text-gray-600">1,234</span>
-                    </div>
-                    <Progress value={85} className="h-2" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="users">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Управление пользователями</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">Здесь будет список всех пользователей с возможностью управления.</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <CardTitle>Управление пользователями</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">Здесь будет список всех пользователей с возможностью управления.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="moderation">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Модерация контента</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">
+                    Здесь будут инструменты для модерации отзывов, вакансий и другого контента.
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="moderation">
-            <Card>
-              <CardHeader>
-                <CardTitle>Модерация контента</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">
-                  Здесь будут инструменты для модерации отзывов, вакансий и другого контента.
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="content">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Управление контентом</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">
+                    Здесь будут инструменты для управления новостями, статьями и другим контентом.
+                  </p>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-          <TabsContent value="content">
-            <Card>
-              <CardHeader>
-                <CardTitle>Управление контентом</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">
-                  Здесь будут инструменты для управления новостями, статьями и другим контентом.
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
+            <TabsContent value="create" className="space-y-6">
+              <div className="grid lg:grid-cols-2 gap-6">
+                <CreateModeratorForm />
+                <CreateChopForm />
+              </div>
+            </TabsContent>
 
-          <TabsContent value="create" className="space-y-6">
-            <div className="grid lg:grid-cols-2 gap-6">
-              <CreateModeratorForm />
-              <CreateChopForm />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="settings">
-            <Card>
-              <CardHeader>
-                <CardTitle>Настройки системы</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">Здесь будут общие настройки платформы.</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
+            <TabsContent value="settings">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Настройки системы</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600">Здесь будут общие настройки платформы.</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
+    </>
   )
 }
