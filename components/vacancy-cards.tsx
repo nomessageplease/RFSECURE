@@ -1,15 +1,15 @@
 "use client"
 
-import { Star, MapPin, Clock, Shield, Building, Calendar, Bookmark, Eye, Heart } from "lucide-react"
+import { Star, MapPin, Clock, Shield, Building, Calendar, Bookmark, Eye, Heart, DollarSign } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useVacancyActions } from "../hooks/use-vacancy-actions"
 
 interface VacancyCardsProps {
   role?: string
-  view: "large" | "small"
-  filters: any
-  sort: {
+  view?: "large" | "small"
+  filters?: any
+  sort?: {
     field: string
     direction: "asc" | "desc"
   }
@@ -46,10 +46,16 @@ interface VacancyData {
   responsibilities: string[]
 }
 
-export default function VacancyCards({ role = "Гость", view, filters, sort }: VacancyCardsProps) {
+export default function VacancyCards({
+  role = "Гость",
+  view = "large",
+  filters = {},
+  sort = { field: "date", direction: "desc" },
+}: VacancyCardsProps) {
   const vacancyActions = useVacancyActions(role)
-  // Создаем массив из 15 вакансий
-  const allVacancies: VacancyData[] = Array.from({ length: 15 }, (_, index) => ({
+
+  // Создаем массив из 12 вакансий
+  const allVacancies: VacancyData[] = Array.from({ length: 12 }, (_, index) => ({
     id: index + 1,
     title: [
       "Охранник КПП",
@@ -62,7 +68,9 @@ export default function VacancyCards({ role = "Гость", view, filters, sort 
       "Охранник склада",
       "Охранник офисного здания",
       "Охранник банка",
-    ][index % 10],
+      "Охранник на объекте",
+      "Охранник-водитель",
+    ][index],
     company: `ЧОП "Безопасность ${index + 1}"`,
     companyLogo: `/placeholder.svg?height=40&width=40&query=company${index + 1}`,
     companyRating: Math.round((3 + Math.random() * 2) * 10) / 10,
@@ -72,7 +80,7 @@ export default function VacancyCards({ role = "Гость", view, filters, sort 
       period: ["month", "shift", "hour"][index % 3],
     },
     location: ["Москва", "Санкт-Петербург", "Казань", "Екатеринбург", "Новосибирск"][index % 5],
-    schedule: ["Сменный", "Вахта", "Подработка"][index % 3],
+    schedule: ["Сменный", "Вахта", "Подработка", "Полный день"][index % 4],
     postType: ["КПП", "Патруль", "Видеонаблюдение", "Стационарный", "Контроль транспорта", "Досмотровый"][index % 6],
     experience: ["не требуется", "от 1 года", "от 3 лет", "от 5 лет"][index % 4],
     securityLicense: index % 3 === 0 ? "не требуется" : index % 2 === 0 ? "4 разряд" : "6 разряд",
@@ -86,7 +94,7 @@ export default function VacancyCards({ role = "Гость", view, filters, sort 
       new: index % 5 === 0,
       closed: index % 12 === 0,
     },
-    publishedDate: `2025-06-${16 - (index % 15)}`,
+    publishedDate: `2025-01-${String(15 + (index % 15)).padStart(2, "0")}`,
     requirements: [
       "Удостоверение частного охранника",
       "Опыт работы в охране приветствуется",
@@ -103,13 +111,16 @@ export default function VacancyCards({ role = "Гость", view, filters, sort 
 
   // Применяем фильтры и исключаем закрытые вакансии
   const filteredVacancies = allVacancies.filter((vacancy) => {
-    // Исключаем закрытые вакансии из общего списка
     if (vacancy.tags.closed) return false
-
-    if (filters.region !== "all" && !vacancy.location.toLowerCase().includes(filters.region)) return false
-    if (filters.workSchedule.length > 0 && !filters.workSchedule.some((s: string) => vacancy.schedule.includes(s)))
+    if (filters.region && filters.region !== "all" && !vacancy.location.toLowerCase().includes(filters.region))
       return false
-    if (filters.experience !== "none" && vacancy.experience !== filters.experience) return false
+    if (
+      filters.workSchedule &&
+      filters.workSchedule.length > 0 &&
+      !filters.workSchedule.some((s: string) => vacancy.schedule.includes(s))
+    )
+      return false
+    if (filters.experience && filters.experience !== "none" && vacancy.experience !== filters.experience) return false
     return true
   })
 
@@ -170,17 +181,35 @@ export default function VacancyCards({ role = "Гость", view, filters, sort 
     if (vacancy.tags.meals) badges.push("Питание")
     if (vacancy.tags.allowCriminalRecord) badges.push("Можно с судимостями")
     badges.push(`Выплаты: ${vacancy.tags.paymentType}`)
-    badges.push(`Периодичность: ${vacancy.tags.paymentFrequency}`)
     return badges
   }
 
+  const handleVacancyClick = (vacancyId: number) => {
+    console.log(`Переход к вакансии ${vacancyId}`)
+    // В реальном приложении здесь будет навигация к детальной странице
+  }
+
+  const handleAllVacanciesClick = () => {
+    window.dispatchEvent(
+      new CustomEvent("pageChanged", {
+        detail: { page: "vacancies" },
+      }),
+    )
+  }
+
   const renderLargeCard = (vacancy: VacancyData) => (
-    <div key={vacancy.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow bg-white">
+    <div
+      key={vacancy.id}
+      className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300 bg-white cursor-pointer group hover:border-blue-200"
+      onClick={() => handleVacancyClick(vacancy.id)}
+    >
       {/* Заголовок с статусами */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center space-x-2 mb-2">
-            <h3 className="font-semibold text-gray-900 text-lg">{vacancy.title}</h3>
+            <h3 className="font-bold text-gray-900 text-lg group-hover:text-blue-600 transition-colors">
+              {vacancy.title}
+            </h3>
             <div className="flex items-center space-x-1">
               {getStatusBadges(vacancy).map((badge, index) => (
                 <Badge key={index} variant={badge.variant} className="text-xs">
@@ -193,14 +222,15 @@ export default function VacancyCards({ role = "Гость", view, filters, sort 
             <img
               src={vacancy.companyLogo || "/placeholder.svg"}
               alt={vacancy.company}
-              className="h-6 w-6 rounded-full"
+              className="h-6 w-6 rounded-full border"
             />
             <span className="text-gray-700 font-medium">{vacancy.company}</span>
             {renderRatingStars(vacancy.companyRating)}
           </div>
         </div>
         <div className="text-right">
-          <div className="text-xl font-bold text-green-600 mb-1">
+          <div className="flex items-center text-2xl font-bold text-green-600 mb-1">
+            <DollarSign className="h-5 w-5 mr-1" />
             {vacancy.salary.from.toLocaleString()} - {vacancy.salary.to.toLocaleString()} ₽
           </div>
           <div className="text-sm text-gray-500">{getSalaryPeriodLabel(vacancy.salary.period)}</div>
@@ -223,7 +253,7 @@ export default function VacancyCards({ role = "Гость", view, filters, sort 
         </div>
         <div className="flex items-center">
           <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-          <span className="text-gray-700">{vacancy.publishedDate}</span>
+          <span className="text-gray-700">{new Date(vacancy.publishedDate).toLocaleDateString("ru-RU")}</span>
         </div>
       </div>
 
@@ -240,27 +270,7 @@ export default function VacancyCards({ role = "Гость", view, filters, sort 
       </div>
 
       {/* Описание */}
-      <p className="text-gray-700 mb-4">{vacancy.description}</p>
-
-      {/* Требования и обязанности */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        <div>
-          <h4 className="font-medium text-gray-900 mb-2">Требования:</h4>
-          <ul className="text-sm text-gray-600 space-y-1">
-            {vacancy.requirements.slice(0, 3).map((req, index) => (
-              <li key={index}>• {req}</li>
-            ))}
-          </ul>
-        </div>
-        <div>
-          <h4 className="font-medium text-gray-900 mb-2">Обязанности:</h4>
-          <ul className="text-sm text-gray-600 space-y-1">
-            {vacancy.responsibilities.slice(0, 3).map((resp, index) => (
-              <li key={index}>• {resp}</li>
-            ))}
-          </ul>
-        </div>
-      </div>
+      <p className="text-gray-700 mb-4 leading-relaxed">{vacancy.description}</p>
 
       {/* Теги */}
       <div className="mb-4">
@@ -279,7 +289,11 @@ export default function VacancyCards({ role = "Гость", view, filters, sort 
           <Button
             size="sm"
             disabled={!vacancyActions.canApplyToVacancy()}
-            onClick={() => vacancyActions.applyToVacancy(vacancy.id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              vacancyActions.applyToVacancy(vacancy.id)
+            }}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             {vacancyActions.getApplyButtonText()}
           </Button>
@@ -287,7 +301,10 @@ export default function VacancyCards({ role = "Гость", view, filters, sort 
             variant="outline"
             size="sm"
             disabled={!vacancyActions.canSaveVacancy()}
-            onClick={() => vacancyActions.saveVacancy(vacancy.id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              vacancyActions.saveVacancy(vacancy.id)
+            }}
           >
             <Bookmark className="h-4 w-4 mr-1" />
             {vacancyActions.getSaveButtonText()}
@@ -298,11 +315,21 @@ export default function VacancyCards({ role = "Гость", view, filters, sort 
             variant="ghost"
             size="sm"
             disabled={!vacancyActions.canFavoriteVacancy()}
-            onClick={() => vacancyActions.favoriteVacancy(vacancy.id)}
+            onClick={(e) => {
+              e.stopPropagation()
+              vacancyActions.favoriteVacancy(vacancy.id)
+            }}
           >
             <Heart className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => vacancyActions.viewVacancyDetails(vacancy.id)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation()
+              vacancyActions.viewVacancyDetails(vacancy.id)
+            }}
+          >
             <Eye className="h-4 w-4 mr-1" />
             Подробнее
           </Button>
@@ -311,129 +338,54 @@ export default function VacancyCards({ role = "Гость", view, filters, sort 
     </div>
   )
 
-  const renderSmallCard = (vacancy: VacancyData) => (
-    <div key={vacancy.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
-      <div className="flex items-start justify-between">
-        <div className="flex items-start space-x-3 flex-1">
-          <img
-            src={vacancy.companyLogo || "/placeholder.svg"}
-            alt={vacancy.company}
-            className="h-8 w-8 rounded-full flex-shrink-0"
-          />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center space-x-2 mb-1">
-              <h3 className="font-medium text-gray-900 truncate">{vacancy.title}</h3>
-              <div className="flex items-center space-x-1">
-                {getStatusBadges(vacancy).map((badge, index) => (
-                  <Badge key={index} variant={badge.variant} className="text-xs">
-                    {badge.text}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-            <div className="flex items-center space-x-2 mb-2">
-              <span className="text-sm text-gray-700 truncate">{vacancy.company}</span>
-              {renderRatingStars(vacancy.companyRating)}
-            </div>
-            <div className="flex items-center space-x-4 text-xs text-gray-600 mb-2">
-              <div className="flex items-center">
-                <MapPin className="h-3 w-3 mr-1" />
-                <span>{vacancy.location}</span>
-              </div>
-              <div className="flex items-center">
-                <Clock className="h-3 w-3 mr-1" />
-                <span>{vacancy.schedule}</span>
-              </div>
-              <div className="flex items-center">
-                <Building className="h-3 w-3 mr-1" />
-                <span>{vacancy.postType}</span>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4 text-xs text-gray-600 mb-2">
-              <span>Опыт: {vacancy.experience}</span>
-              <div className="flex items-center">
-                <Shield className="h-3 w-3 mr-1" />
-                <span>ЧО: {vacancy.securityLicense}</span>
-              </div>
-            </div>
-            <p className="text-xs text-gray-600 line-clamp-2 mb-2">{vacancy.description}</p>
-            <div className="flex flex-wrap gap-1">
-              {getTagBadges(vacancy)
-                .slice(0, 2)
-                .map((tag, index) => (
-                  <Badge key={index} variant="outline" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-            </div>
-          </div>
-        </div>
-        <div className="text-right flex-shrink-0 ml-4">
-          <div className="text-sm font-semibold text-green-600 mb-1">
-            {vacancy.salary.from.toLocaleString()} - {vacancy.salary.to.toLocaleString()} ₽
-          </div>
-          <div className="text-xs text-gray-500 mb-3">{getSalaryPeriodLabel(vacancy.salary.period)}</div>
-          <div className="flex flex-col space-y-1">
-            <Button
-              size="sm"
-              disabled={!vacancyActions.canApplyToVacancy()}
-              onClick={() => vacancyActions.applyToVacancy(vacancy.id)}
-              className="text-xs px-2 py-1"
-            >
-              {vacancyActions.getApplyButtonText()}
-            </Button>
-            <div className="flex items-center space-x-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={!vacancyActions.canSaveVacancy()}
-                onClick={() => vacancyActions.saveVacancy(vacancy.id)}
-                className="p-1"
-              >
-                <Bookmark className="h-3 w-3" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => vacancyActions.viewVacancyDetails(vacancy.id)}
-                className="p-1"
-              >
-                <Eye className="h-3 w-3" />
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-
-  const renderCards = () => {
-    switch (view) {
-      case "large":
-        return <div className="space-y-6">{sortedVacancies.map(renderLargeCard)}</div>
-      case "small":
-        return <div className="space-y-3">{sortedVacancies.map(renderSmallCard)}</div>
-      default:
-        return null
-    }
-  }
-
   return (
-    <div className="border border-gray-300 rounded-lg p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-gray-700">Найдено вакансий: {sortedVacancies.length}</h3>
-        {role === "Гость" && <div className="text-xs text-gray-500">Зарегистрируйтесь для отклика на вакансии</div>}
-        {role === "Представитель организации" && (
-          <div className="text-xs text-gray-500">Представители организаций не могут откликаться на вакансии</div>
-        )}
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center">
+          <span className="inline-block w-8 h-1 bg-gradient-to-r from-green-500 to-blue-500 mr-3 rounded-full"></span>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Актуальные вакансии</h2>
+            <p className="text-gray-600 text-sm mt-1">Найдено {sortedVacancies.length} предложений</p>
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          className="text-blue-600 hover:text-blue-800 font-medium flex items-center group hover:bg-blue-50 transition-colors bg-transparent"
+          onClick={handleAllVacanciesClick}
+        >
+          Все вакансии
+          <span className="ml-1 transition-transform group-hover:translate-x-1">→</span>
+        </Button>
       </div>
 
       {sortedVacancies.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500">По выбранным фильтрам вакансии не найдены</p>
+        <div className="text-center py-12 bg-gray-50 rounded-xl">
+          <p className="text-gray-500 text-lg">По выбранным фильтрам вакансии не найдены</p>
+          <Button variant="outline" className="mt-4 bg-transparent" onClick={handleAllVacanciesClick}>
+            Посмотреть все вакансии
+          </Button>
         </div>
       ) : (
-        renderCards()
+        <div className="space-y-6">{sortedVacancies.slice(0, 6).map(renderLargeCard)}</div>
+      )}
+
+      {role === "Гость" && (
+        <div className="text-center py-8 border-t border-gray-200 mt-6 bg-blue-50 rounded-xl">
+          <p className="text-gray-700 mb-4 text-lg">Зарегистрируйтесь, чтобы откликаться на вакансии</p>
+          <div className="flex justify-center space-x-4">
+            <Button
+              onClick={() => window.dispatchEvent(new CustomEvent("pageChanged", { detail: { page: "register" } }))}
+            >
+              Зарегистрироваться
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => window.dispatchEvent(new CustomEvent("pageChanged", { detail: { page: "login" } }))}
+            >
+              Войти
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   )

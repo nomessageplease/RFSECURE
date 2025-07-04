@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Bell, User } from "lucide-react"
+import { Bell, User, Menu, X } from "lucide-react"
 import NotificationsPopup from "./notifications-popup"
 
 export default function Header() {
   const [currentRole, setCurrentRole] = useState("Гость")
   const [currentPage, setCurrentPage] = useState("main")
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // Загружаем роль из localStorage при инициализации
   useEffect(() => {
@@ -28,6 +29,7 @@ export default function Header() {
 
     const handlePageChange = (event: CustomEvent) => {
       setCurrentPage(event.detail.page)
+      setIsMobileMenuOpen(false) // Закрываем мобильное меню при навигации
     }
 
     window.addEventListener("roleChanged", handleRoleChange as EventListener)
@@ -65,71 +67,100 @@ export default function Header() {
       <div className="flex items-center space-x-4">
         {/* Уведомления */}
         <button
-          className="relative p-2 text-gray-600 hover:text-blue-600"
+          className="relative p-2 text-gray-600 hover:text-blue-600 transition-colors"
           onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
         >
           <Bell className="h-5 w-5" />
-          <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+          <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full animate-pulse"></span>
         </button>
 
         {/* Личный кабинет */}
         <button
-          className="flex items-center space-x-2 p-2 text-gray-600 hover:text-blue-600"
+          className="flex items-center space-x-2 p-2 text-gray-600 hover:text-blue-600 transition-colors rounded-lg hover:bg-gray-50"
           onClick={() => handleNavigation("profile")}
         >
           <User className="h-5 w-5" />
-          <span className="text-sm font-medium">Личный кабинет</span>
+          <span className="text-sm font-medium hidden sm:inline">Личный кабинет</span>
         </button>
       </div>
     )
   }
 
+  const navigationItems = [
+    { key: "main", label: "Главная" },
+    { key: "organizations", label: "Организации" },
+    { key: "vacancies", label: "Вакансии" },
+    { key: "forum", label: "Форум" },
+    { key: "news", label: "Новости" },
+  ]
+
   return (
     <>
-      <header className="bg-white border-b border-gray-200 px-6 py-4">
+      <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-40 backdrop-blur-sm bg-white/95">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Логотип */}
           <div className="flex items-center flex-shrink-0">
-            <img src="/placeholder.svg?height=40&width=40" alt="Логотип" className="h-10 w-10" />
+            <button
+              onClick={() => handleNavigation("main")}
+              className="flex items-center space-x-3 hover:opacity-80 transition-opacity"
+            >
+              <img src="/placeholder.svg?height=40&width=40" alt="RusGuard" className="h-10 w-10" />
+              <div className="hidden sm:block">
+                <div className="text-xl font-bold text-gray-900">RusGuard</div>
+                <div className="text-xs text-gray-500">Платформа охранной отрасли</div>
+              </div>
+            </button>
           </div>
 
-          {/* Навигация */}
-          <nav className="flex items-center justify-center space-x-8 flex-1">
-            <button
-              className={`font-medium px-3 py-2 ${currentPage === "main" ? "text-blue-600" : "text-gray-700 hover:text-blue-600"}`}
-              onClick={() => handleNavigation("main")}
-            >
-              Главная
-            </button>
-            <button
-              className={`font-medium px-3 py-2 ${currentPage === "organizations" ? "text-blue-600" : "text-gray-700 hover:text-blue-600"}`}
-              onClick={() => handleNavigation("organizations")}
-            >
-              Организации
-            </button>
-            <button
-              className={`font-medium px-3 py-2 ${currentPage === "vacancies" ? "text-blue-600" : "text-gray-700 hover:text-blue-600"}`}
-              onClick={() => handleNavigation("vacancies")}
-            >
-              Вакансии
-            </button>
-            <button
-              className={`font-medium px-3 py-2 ${currentPage === "forum" ? "text-blue-600" : "text-gray-700 hover:text-blue-600"}`}
-              onClick={() => handleNavigation("forum")}
-            >
-              Форум
-            </button>
-            <button
-              className={`font-medium px-3 py-2 ${currentPage === "news" ? "text-blue-600" : "text-gray-700 hover:text-blue-600"}`}
-              onClick={() => handleNavigation("news")}
-            >
-              Новости
-            </button>
+          {/* Навигация для десктопа */}
+          <nav className="hidden lg:flex items-center justify-center space-x-8 flex-1">
+            {navigationItems.map((item) => (
+              <button
+                key={item.key}
+                className={`font-medium px-3 py-2 rounded-lg transition-colors ${
+                  currentPage === item.key
+                    ? "text-blue-600 bg-blue-50"
+                    : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                }`}
+                onClick={() => handleNavigation(item.key)}
+              >
+                {item.label}
+              </button>
+            ))}
           </nav>
 
-          {/* Личное */}
-          <div className="flex items-center flex-shrink-0">{renderPersonalModule()}</div>
+          {/* Личное для десктопа */}
+          <div className="hidden lg:flex items-center flex-shrink-0">{renderPersonalModule()}</div>
+
+          {/* Мобильное меню кнопка */}
+          <div className="lg:hidden">
+            <Button variant="ghost" size="sm" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
+              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+          </div>
         </div>
+
+        {/* Мобильное меню */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden mt-4 pb-4 border-t border-gray-200">
+            <nav className="flex flex-col space-y-2 mt-4">
+              {navigationItems.map((item) => (
+                <button
+                  key={item.key}
+                  className={`font-medium px-3 py-2 rounded-lg text-left transition-colors ${
+                    currentPage === item.key
+                      ? "text-blue-600 bg-blue-50"
+                      : "text-gray-700 hover:text-blue-600 hover:bg-gray-50"
+                  }`}
+                  onClick={() => handleNavigation(item.key)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+            <div className="mt-4 pt-4 border-t border-gray-200">{renderPersonalModule()}</div>
+          </div>
+        )}
       </header>
 
       {/* Попап уведомлений */}
