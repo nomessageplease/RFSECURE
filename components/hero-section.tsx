@@ -4,7 +4,6 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ArrowRight, Shield, Users, Building, Star, Crown, Headphones, Settings } from "lucide-react"
-import HeroQuickButtons from "@/components/hero-quick-buttons"
 
 interface HeroSectionProps {
   role?: string
@@ -123,6 +122,14 @@ export default function HeroSection({ role = "Гость" }: HeroSectionProps) {
   const config = getRoleConfig(role)
   const IconComponent = config.icon
 
+  const handleNavigation = (page: string) => {
+    window.dispatchEvent(
+      new CustomEvent("pageChanged", {
+        detail: { page },
+      }),
+    )
+  }
+
   return (
     <section className={`relative py-20 bg-gradient-to-br ${config.color} text-white overflow-hidden`}>
       {/* Декоративные элементы */}
@@ -175,9 +182,18 @@ export default function HeroSection({ role = "Гость" }: HeroSectionProps) {
               </div>
             </div>
 
-            {/* CTA кнопка */}
+            {/* CTA кнопки */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-white text-gray-900 hover:bg-white/90">
+              <Button
+                size="lg"
+                className="bg-white text-gray-900 hover:bg-white/90"
+                onClick={() => {
+                  if (role === "Сотрудник охраны") handleNavigation("vacancies")
+                  else if (role === "Менеджер ЧОПа") handleNavigation("organizations")
+                  else if (role === "Модератор") handleNavigation("profile")
+                  else handleNavigation("organizations")
+                }}
+              >
                 {config.cta}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -185,6 +201,7 @@ export default function HeroSection({ role = "Гость" }: HeroSectionProps) {
                 size="lg"
                 variant="outline"
                 className="border-white/30 text-white hover:bg-white/10 bg-transparent"
+                onClick={() => handleNavigation("organizations")}
               >
                 Узнать больше
               </Button>
@@ -193,7 +210,72 @@ export default function HeroSection({ role = "Гость" }: HeroSectionProps) {
 
           {/* Правая часть - быстрые действия */}
           <div className="lg:pl-8">
-            <HeroQuickButtons role={role} />
+            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 space-y-4">
+              <h3 className="text-xl font-semibold text-white mb-4">Быстрые действия</h3>
+
+              {role === "Гость" && (
+                <div className="space-y-3">
+                  <Button
+                    variant="outline"
+                    className="w-full bg-white/20 border-white/30 text-white hover:bg-white/30"
+                    onClick={() => handleNavigation("register")}
+                  >
+                    Зарегистрироваться
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full bg-white/20 border-white/30 text-white hover:bg-white/30"
+                    onClick={() => handleNavigation("login")}
+                  >
+                    Войти
+                  </Button>
+                </div>
+              )}
+
+              {role === "Сотрудник охраны" && (
+                <div className="space-y-3">
+                  <Button
+                    variant="outline"
+                    className="w-full bg-white/20 border-white/30 text-white hover:bg-white/30"
+                    onClick={() => handleNavigation("vacancies")}
+                  >
+                    Найти работу
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full bg-white/20 border-white/30 text-white hover:bg-white/30"
+                    onClick={() => handleNavigation("profile")}
+                  >
+                    Мой профиль
+                  </Button>
+                </div>
+              )}
+
+              {(role === "Управляющий ЧОПа" || role === "Менеджер ЧОПа") && (
+                <div className="space-y-3">
+                  <Button
+                    variant="outline"
+                    className="w-full bg-white/20 border-white/30 text-white hover:bg-white/30"
+                    onClick={() => handleNavigation("vacancies")}
+                  >
+                    Разместить вакансию
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full bg-white/20 border-white/30 text-white hover:bg-white/30"
+                    onClick={() => handleNavigation("organizations")}
+                  >
+                    Управление ЧОП
+                  </Button>
+                </div>
+              )}
+
+              <div className="pt-4 border-t border-white/20">
+                <p className="text-sm text-white/70 text-center">
+                  Присоединяйтесь к сообществу профессионалов охранной отрасли
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

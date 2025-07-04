@@ -90,60 +90,63 @@ export default function RoleSwitcher() {
   const CurrentIcon = currentRole.icon
 
   return (
-    <div className="relative">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={`
-          flex items-center space-x-2 px-4 py-2 rounded-lg border-2 border-dashed border-gray-300 
-          hover:border-gray-400 transition-all duration-200 ${currentRole.bgColor}
-        `}
-      >
-        <CurrentIcon className={`h-4 w-4 ${currentRole.color}`} />
-        <span className={`font-medium ${currentRole.color}`}>{currentRole.name}</span>
-        <ChevronDown className={`h-4 w-4 ${currentRole.color} transition-transform ${isOpen ? "rotate-180" : ""}`} />
-      </button>
+    <div className="fixed bottom-6 right-6 z-50">
+      <div className="relative">
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={`
+            flex items-center space-x-3 px-4 py-3 rounded-xl border-2 border-dashed border-gray-300 
+            hover:border-gray-400 transition-all duration-200 ${currentRole.bgColor} shadow-lg
+            hover:shadow-xl backdrop-blur-sm
+          `}
+        >
+          <CurrentIcon className={`h-5 w-5 ${currentRole.color}`} />
+          <span className={`font-medium ${currentRole.color}`}>{currentRole.name}</span>
+          <ChevronDown className={`h-4 w-4 ${currentRole.color} transition-transform ${isOpen ? "rotate-180" : ""}`} />
+        </button>
 
-      {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-          <div className="p-3 border-b border-gray-100">
-            <h3 className="font-semibold text-gray-900 text-sm">Выберите роль для тестирования</h3>
-            <p className="text-xs text-gray-500 mt-1">Интерфейс адаптируется под выбранную роль</p>
-          </div>
-          <div className="max-h-80 overflow-y-auto">
-            {roles.map((role, index) => {
-              const RoleIcon = role.icon
-              return (
-                <button
-                  key={role.name}
-                  onClick={() => handleRoleChange(index)}
-                  className={`
-                    w-full flex items-start space-x-3 px-4 py-3 text-left hover:bg-gray-50 
-                    transition-colors ${index === currentRoleIndex ? "bg-blue-50 border-r-2 border-blue-500" : ""}
-                  `}
-                >
-                  <div className={`p-2 rounded-lg ${role.bgColor} flex-shrink-0`}>
-                    <RoleIcon className={`h-4 w-4 ${role.color}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium text-gray-900 text-sm">{role.name}</span>
-                      {index === currentRoleIndex && (
-                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Активна</span>
-                      )}
+        {isOpen && (
+          <div className="absolute bottom-full right-0 mb-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
+            <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50">
+              <h3 className="font-semibold text-gray-900 text-sm">Выберите роль для тестирования</h3>
+              <p className="text-xs text-gray-600 mt-1">Интерфейс адаптируется под выбранную роль</p>
+            </div>
+            <div className="max-h-80 overflow-y-auto">
+              {roles.map((role, index) => {
+                const RoleIcon = role.icon
+                return (
+                  <button
+                    key={role.name}
+                    onClick={() => handleRoleChange(index)}
+                    className={`
+                      w-full flex items-start space-x-3 px-4 py-3 text-left hover:bg-gray-50 
+                      transition-colors ${index === currentRoleIndex ? "bg-blue-50 border-r-4 border-blue-500" : ""}
+                    `}
+                  >
+                    <div className={`p-2 rounded-lg ${role.bgColor} flex-shrink-0`}>
+                      <RoleIcon className={`h-4 w-4 ${role.color}`} />
                     </div>
-                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{role.description}</p>
-                  </div>
-                </button>
-              )
-            })}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-medium text-gray-900 text-sm">{role.name}</span>
+                        {index === currentRoleIndex && (
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">Активна</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">{role.description}</p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+            <div className="p-3 border-t border-gray-100 bg-gray-50">
+              <p className="text-xs text-gray-500 text-center">
+                🔧 Режим разработки - переключение ролей для тестирования функций
+              </p>
+            </div>
           </div>
-          <div className="p-3 border-t border-gray-100 bg-gray-50">
-            <p className="text-xs text-gray-500 text-center">
-              🔧 Режим разработки - переключение ролей для тестирования функций
-            </p>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

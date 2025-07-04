@@ -3,185 +3,201 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Clock, MessageSquare, Briefcase, Building, Star, TrendingUp, Users, Activity } from "lucide-react"
+import { TrendingUp, Users, MessageSquare, Star, Clock, MapPin } from "lucide-react"
 
-interface PlatformActivityProps {
-  role?: string
-}
-
-export default function PlatformActivity({ role = "Гость" }: PlatformActivityProps) {
-  const [activities] = useState([
+export default function PlatformActivity() {
+  const [recentActivity] = useState([
     {
       id: 1,
       type: "vacancy",
-      title: "Новая вакансия: Охранник 4 разряда",
-      organization: "СБ Альфа",
+      title: "Новая вакансия: Охранник КПП",
+      company: 'ЧОП "Безопасность+"',
+      location: "Москва",
       time: "5 минут назад",
-      icon: Briefcase,
-      color: "text-green-600",
-      bgColor: "bg-green-100",
+      urgent: true,
     },
     {
       id: 2,
       type: "review",
-      title: "Новый отзыв о ЧОП Барс",
-      author: "Иван П.",
-      rating: 5,
+      title: "Новый отзыв о работодателе",
+      company: 'ЧОП "Гарант"',
+      rating: 4,
       time: "12 минут назад",
-      icon: Star,
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-100",
+      urgent: false,
     },
     {
       id: 3,
-      type: "forum",
-      title: "Обсуждение: Изменения в законодательстве",
-      replies: 23,
+      type: "user",
+      title: "Новый пользователь зарегистрировался",
+      company: "Охранник с опытом 3 года",
+      location: "Санкт-Петербург",
       time: "25 минут назад",
-      icon: MessageSquare,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100",
+      urgent: false,
     },
     {
       id: 4,
-      type: "organization",
-      title: "Новая организация: ЧОП Гарант-Сервис",
-      location: "Санкт-Петербург",
+      type: "forum",
+      title: "Обсуждение: Изменения в законодательстве",
+      company: "Форум профессионалов",
       time: "1 час назад",
-      icon: Building,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100",
+      urgent: false,
     },
     {
       id: 5,
-      type: "user",
-      title: "Новый пользователь: Алексей Смирнов",
-      role: "Сотрудник охраны",
+      type: "vacancy",
+      title: "Срочно требуется: Старший охранник",
+      company: 'ЧОП "Щит"',
+      location: "Казань",
       time: "2 часа назад",
-      icon: Users,
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-100",
+      urgent: true,
     },
   ])
 
   const [stats] = useState({
-    todayVacancies: 47,
-    todayUsers: 156,
-    todayReviews: 23,
-    todayDiscussions: 89,
+    activeUsers: 342,
+    newVacancies: 28,
+    newReviews: 15,
+    forumMessages: 67,
   })
 
-  const formatTime = (timeString: string) => {
-    return timeString
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case "vacancy":
+        return <Users className="h-4 w-4 text-blue-600" />
+      case "review":
+        return <Star className="h-4 w-4 text-yellow-600" />
+      case "user":
+        return <TrendingUp className="h-4 w-4 text-green-600" />
+      case "forum":
+        return <MessageSquare className="h-4 w-4 text-purple-600" />
+      default:
+        return <Clock className="h-4 w-4 text-gray-600" />
+    }
+  }
+
+  const getActivityBadge = (type: string) => {
+    switch (type) {
+      case "vacancy":
+        return { text: "Вакансия", variant: "default" as const }
+      case "review":
+        return { text: "Отзыв", variant: "secondary" as const }
+      case "user":
+        return { text: "Пользователь", variant: "outline" as const }
+      case "forum":
+        return { text: "Форум", variant: "outline" as const }
+      default:
+        return { text: "Активность", variant: "outline" as const }
+    }
   }
 
   return (
     <div className="space-y-6">
       {/* Заголовок */}
-      <div className="flex items-center space-x-3">
-        <div className="p-2 bg-green-100 rounded-lg">
-          <Activity className="h-6 w-6 text-green-600" />
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Активность платформы</h2>
-          <p className="text-gray-600">Последние события в реальном времени</p>
-        </div>
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900">Активность платформы</h2>
+        <p className="text-gray-600 mt-1">Последние события и статистика в реальном времени</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Статистика за сегодня */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-                <span>Сегодня</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">{stats.todayVacancies}</div>
-                  <div className="text-xs text-gray-600">Новых вакансий</div>
-                </div>
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{stats.todayUsers}</div>
-                  <div className="text-xs text-gray-600">Новых пользователей</div>
-                </div>
-                <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                  <div className="text-2xl font-bold text-yellow-600">{stats.todayReviews}</div>
-                  <div className="text-xs text-gray-600">Отзывов</div>
-                </div>
-                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600">{stats.todayDiscussions}</div>
-                  <div className="text-xs text-gray-600">Обсуждений</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Статистика */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-blue-700">{stats.activeUsers}</div>
+            <div className="text-sm text-blue-600">Активных пользователей</div>
+          </CardContent>
+        </Card>
 
-        {/* Лента активности */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Последние события</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {activities.map((activity) => {
-                  const IconComponent = activity.icon
-                  return (
-                    <div
-                      key={activity.id}
-                      className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
-                    >
-                      <div className={`p-2 rounded-lg ${activity.bgColor} flex-shrink-0`}>
-                        <IconComponent className={`h-4 w-4 ${activity.color}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">{activity.title}</p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              {activity.organization && (
-                                <Badge variant="outline" className="text-xs">
-                                  {activity.organization}
-                                </Badge>
-                              )}
-                              {activity.author && <span className="text-xs text-gray-500">от {activity.author}</span>}
-                              {activity.rating && (
-                                <div className="flex items-center space-x-1">
-                                  {[...Array(activity.rating)].map((_, i) => (
-                                    <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                                  ))}
-                                </div>
-                              )}
-                              {activity.replies && (
-                                <span className="text-xs text-gray-500">{activity.replies} ответов</span>
-                              )}
-                              {activity.location && <span className="text-xs text-gray-500">{activity.location}</span>}
-                              {activity.role && (
-                                <Badge variant="secondary" className="text-xs">
-                                  {activity.role}
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-1 text-xs text-gray-500 flex-shrink-0 ml-2">
-                            <Clock className="h-3 w-3" />
-                            <span>{formatTime(activity.time)}</span>
-                          </div>
-                        </div>
-                      </div>
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-green-700">{stats.newVacancies}</div>
+            <div className="text-sm text-green-600">Новых вакансий</div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-yellow-700">{stats.newReviews}</div>
+            <div className="text-sm text-yellow-600">Новых отзывов</div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <CardContent className="p-4 text-center">
+            <div className="text-2xl font-bold text-purple-700">{stats.forumMessages}</div>
+            <div className="text-sm text-purple-600">Сообщений в форуме</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Лента активности */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Clock className="h-5 w-5 text-gray-600" />
+            <span>Последняя активность</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {recentActivity.map((activity) => {
+              const badge = getActivityBadge(activity.type)
+              return (
+                <div
+                  key={activity.id}
+                  className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors hover:bg-gray-50 ${
+                    activity.urgent ? "border-orange-200 bg-orange-50" : "border-gray-200"
+                  }`}
+                >
+                  <div className="flex-shrink-0 mt-1">{getActivityIcon(activity.type)}</div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <Badge variant={badge.variant} className="text-xs">
+                        {badge.text}
+                      </Badge>
+                      {activity.urgent && (
+                        <Badge variant="destructive" className="text-xs">
+                          Срочно
+                        </Badge>
+                      )}
                     </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+
+                    <h4 className="font-medium text-gray-900 text-sm">{activity.title}</h4>
+                    <p className="text-sm text-gray-600">{activity.company}</p>
+
+                    <div className="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                      <div className="flex items-center space-x-1">
+                        <Clock className="h-3 w-3" />
+                        <span>{activity.time}</span>
+                      </div>
+
+                      {activity.location && (
+                        <div className="flex items-center space-x-1">
+                          <MapPin className="h-3 w-3" />
+                          <span>{activity.location}</span>
+                        </div>
+                      )}
+
+                      {activity.rating && (
+                        <div className="flex items-center space-x-1">
+                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                          <span>{activity.rating}/5</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="mt-6 text-center">
+            <button className="text-blue-600 hover:text-blue-800 font-medium text-sm">
+              Показать больше активности →
+            </button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
