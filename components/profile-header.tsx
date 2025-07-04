@@ -1,124 +1,110 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Badge } from "@/components/ui/badge"
-import { User, Shield, Building, Settings, Crown, Star } from "lucide-react"
+import { User, Shield, Users, Crown, Headphones, Settings } from "lucide-react"
 
 interface ProfileHeaderProps {
   role?: string
 }
 
+const getRoleConfig = (role: string) => {
+  switch (role) {
+    case "Гость":
+      return {
+        icon: User,
+        color: "text-gray-600",
+        bgColor: "bg-gray-100",
+        greeting: "Добро пожаловать!",
+        subtitle: "Зарегистрируйтесь для полного доступа к платформе",
+      }
+    case "Новичок":
+      return {
+        icon: User,
+        color: "text-blue-600",
+        bgColor: "bg-blue-100",
+        greeting: "Добро пожаловать на платформу!",
+        subtitle: "Выберите свою роль для персонализации интерфейса",
+      }
+    case "Сотрудник охраны":
+      return {
+        icon: Shield,
+        color: "text-green-600",
+        bgColor: "bg-green-100",
+        greeting: "Добро пожаловать, охранник!",
+        subtitle: "Найдите подходящую работу и развивайте карьеру",
+      }
+    case "Управляющий ЧОПа":
+      return {
+        icon: Crown,
+        color: "text-purple-600",
+        bgColor: "bg-purple-100",
+        greeting: "Добро пожаловать, управляющий!",
+        subtitle: "Управляйте организацией и развивайте бизнес",
+      }
+    case "Менеджер ЧОПа":
+      return {
+        icon: Users,
+        color: "text-indigo-600",
+        bgColor: "bg-indigo-100",
+        greeting: "Добро пожаловать, менеджер!",
+        subtitle: "Управляйте вакансиями и подбором персонала",
+      }
+    case "Модератор":
+      return {
+        icon: Shield,
+        color: "text-orange-600",
+        bgColor: "bg-orange-100",
+        greeting: "Добро пожаловать, модератор!",
+        subtitle: "Поддерживайте порядок и качество контента",
+      }
+    case "Саппорт":
+      return {
+        icon: Headphones,
+        color: "text-cyan-600",
+        bgColor: "bg-cyan-100",
+        greeting: "Добро пожаловать в поддержку!",
+        subtitle: "Помогайте пользователям решать их вопросы",
+      }
+    case "Суперадмин":
+      return {
+        icon: Settings,
+        color: "text-red-600",
+        bgColor: "bg-red-100",
+        greeting: "Добро пожаловать, администратор!",
+        subtitle: "Полный контроль над системой и пользователями",
+      }
+    default:
+      return {
+        icon: User,
+        color: "text-gray-600",
+        bgColor: "bg-gray-100",
+        greeting: "Добро пожаловать!",
+        subtitle: "Личный кабинет пользователя",
+      }
+  }
+}
+
 export default function ProfileHeader({ role = "Гость" }: ProfileHeaderProps) {
-  const [userName, setUserName] = useState("")
-
-  // В реальном приложении это будет приходить из контекста авторизации
-  useEffect(() => {
-    if (role !== "Гость") {
-      setUserName("Иван Петров")
-    }
-  }, [role])
-
-  const getRoleIcon = (userRole: string) => {
-    const icons = {
-      Гость: User,
-      Новичок: User,
-      Охранник: Shield,
-      "Представитель организации": Building,
-      Модератор: Star,
-      Админ: Crown,
-    }
-    const IconComponent = icons[userRole as keyof typeof icons] || User
-    return <IconComponent className="h-8 w-8" />
-  }
-
-  const getRoleColor = (userRole: string) => {
-    const colors = {
-      Гость: "bg-gray-100 text-gray-800",
-      Новичок: "bg-yellow-100 text-yellow-800",
-      Охранник: "bg-blue-100 text-blue-800",
-      "Представитель организации": "bg-green-100 text-green-800",
-      Модератор: "bg-purple-100 text-purple-800",
-      Админ: "bg-red-100 text-red-800",
-    }
-    return colors[userRole as keyof typeof colors] || "bg-gray-100 text-gray-800"
-  }
-
-  const getWelcomeMessage = () => {
-    switch (role) {
-      case "Гость":
-        return {
-          title: "Добро пожаловать на RusGuard",
-          subtitle: "Войдите в систему или зарегистрируйтесь для доступа к личному кабинету",
-          emoji: "👋",
-        }
-      case "Новичок":
-        return {
-          title: `Добро пожаловать, ${userName}!`,
-          subtitle: "Вы делаете первые шаги на платформе. Давайте настроим ваш профиль!",
-          emoji: "🌱",
-        }
-      case "Охранник":
-        return {
-          title: `Личный кабинет охранника`,
-          subtitle: `${userName}, управляйте профилем и откликайтесь на вакансии`,
-          emoji: "🛡️",
-        }
-      case "Представитель организации":
-        return {
-          title: `Кабинет представителя ЧОП`,
-          subtitle: `${userName}, управляйте вакансиями и взаимодействуйте с кандидатами`,
-          emoji: "🏢",
-        }
-      case "Модератор":
-        return {
-          title: `Панель модератора`,
-          subtitle: `${userName}, следите за порядком на платформе`,
-          emoji: "⭐",
-        }
-      case "Админ":
-        return {
-          title: `Панель администратора`,
-          subtitle: `${userName}, полное управление платформой`,
-          emoji: "👑",
-        }
-      default:
-        return {
-          title: "Личный кабинет",
-          subtitle: "Управляйте своим профилем",
-          emoji: "👤",
-        }
-    }
-  }
-
-  const welcomeData = getWelcomeMessage()
+  const config = getRoleConfig(role)
+  const RoleIcon = config.icon
 
   return (
-    <div className="space-y-6">
-      {/* Основная информация */}
+    <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 text-white">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <div className="h-16 w-16 bg-gray-100 rounded-full flex items-center justify-center">{getRoleIcon(role)}</div>
+          <div className={`p-3 rounded-full ${config.bgColor}`}>
+            <RoleIcon className={`h-8 w-8 ${config.color}`} />
+          </div>
           <div>
-            <div className="flex items-center space-x-3 mb-2">
-              <Badge className={getRoleColor(role)}>{role}</Badge>
-              {role !== "Гость" && <span className="text-sm text-gray-500">На платформе с марта 2024</span>}
-            </div>
+            <h1 className="text-2xl font-bold">{config.greeting}</h1>
+            <p className="text-blue-100 mt-1">{config.subtitle}</p>
           </div>
         </div>
-        {role !== "Гость" && (
-          <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors">
-            <Settings className="h-5 w-5" />
-            <span className="text-sm">Настройки</span>
-          </button>
-        )}
-      </div>
-
-      {/* Приветствие */}
-      <div className="text-center space-y-3">
-        <div className="text-4xl">{welcomeData.emoji}</div>
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{welcomeData.title}</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">{welcomeData.subtitle}</p>
+        <div className="text-right">
+          <div className="text-sm text-blue-100">Текущая роль</div>
+          <div className="font-semibold">{role}</div>
+          <div className="text-xs text-blue-200 mt-1">
+            {role === "Гость" ? "Не авторизован" : "Активен с 15.01.2024"}
+          </div>
         </div>
       </div>
     </div>

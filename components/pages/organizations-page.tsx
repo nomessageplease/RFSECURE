@@ -12,7 +12,16 @@ export default function OrganizationsPage() {
   useEffect(() => {
     const savedRoleIndex = localStorage.getItem("currentRoleIndex")
     if (savedRoleIndex !== null) {
-      const roles = ["Гость", "Новичок", "Охранник", "Представитель организации", "Модератор", "Админ"]
+      const roles = [
+        "Гость",
+        "Новичок",
+        "Сотрудник охраны",
+        "Управляющий ЧОПа",
+        "Менеджер ЧОПа",
+        "Модератор",
+        "Саппорт",
+        "Суперадмин",
+      ]
       const index = Number.parseInt(savedRoleIndex, 10)
       setCurrentRole(roles[index])
     }
