@@ -1,43 +1,15 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { useRegisterAction } from "@/hooks/use-register-action"
-import { useNavigationActions } from "@/hooks/use-navigation-actions"
 
 interface HeroQuickButtonsProps {
   role?: string
 }
 
 export default function HeroQuickButtons({ role = "Гость" }: HeroQuickButtonsProps) {
-  const { handleRegister } = useRegisterAction()
-  const { navigateToVacancies, navigateToOrganizations, navigateToForum, navigateToHowItWorks } = useNavigationActions()
-
   const handleButtonClick = (action: string) => {
     console.log(`Action clicked: ${action} for role: ${role}`)
-
-    // Обработка навигационных действий
-    switch (action) {
-      case "register":
-        handleRegister()
-        return
-      case "find-work":
-        navigateToVacancies()
-        return
-      case "view-organizations":
-        navigateToOrganizations()
-        return
-      case "study-chops":
-        navigateToOrganizations()
-        return
-      case "go-to-forum":
-        navigateToForum()
-        return
-      case "how-it-works":
-        navigateToHowItWorks()
-        return
-      default:
-        console.log(`Action ${action} not implemented yet`)
-    }
+    // Здесь будет логика навигации или других действий
   }
 
   const getButtonsForRole = () => {

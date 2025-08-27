@@ -12,9 +12,8 @@ export default function ProfileInfo({ role = "Гость" }: ProfileInfoProps) {
   if (role === "Гость") {
     return (
       <div className="text-center py-12">
-        <div className="text-4xl mb-4">🔒</div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Доступ ограничен</h2>
-        <p className="text-gray-600">Для просмотра информации необходимо войти в систему</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Войдите для просмотра информации</h2>
+        <p className="text-gray-600">Зарегистрируйтесь или войдите в систему, чтобы увидеть свой профиль</p>
       </div>
     )
   }
@@ -80,139 +79,52 @@ export default function ProfileInfo({ role = "Гость" }: ProfileInfoProps) {
 
   const renderNewbieInfo = () => (
     <div className="space-y-6">
-      {/* Дашборд */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Следующие шаги */}
-        <Card className="border-l-4 border-l-blue-500">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <div className="text-2xl">📋</div>
-              <span>Следующие шаги</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[
-                { task: "Загрузить фото профиля", completed: false, priority: "high" },
-                { task: "Заполнить опыт работы", completed: false, priority: "high" },
-                { task: "Добавить документы", completed: false, priority: "medium" },
-                { task: "Указать предпочтения по работе", completed: true, priority: "low" },
-                { task: "Пройти верификацию", completed: false, priority: "medium" },
-              ].map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-4 h-4 rounded-full ${item.completed ? "bg-green-500" : "bg-gray-300"}`}></div>
-                    <span className={`text-sm ${item.completed ? "line-through text-gray-500" : "text-gray-700"}`}>
-                      {item.task}
-                    </span>
-                  </div>
-                  <Badge
-                    variant={
-                      item.priority === "high" ? "destructive" : item.priority === "medium" ? "default" : "outline"
-                    }
-                  >
-                    {item.priority === "high" ? "Важно" : item.priority === "medium" ? "Средне" : "Низко"}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Рекомендации */}
-        <Card className="border-l-4 border-l-green-500">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <div className="text-2xl">💡</div>
-              <span>Рекомендации</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="p-3 bg-green-50 rounded-lg">
-                <h4 className="font-medium text-green-800 mb-1">Изучите топ ЧОП</h4>
-                <p className="text-sm text-green-600">Посмотрите рейтинг лучших организаций в вашем городе</p>
-              </div>
-              <div className="p-3 bg-blue-50 rounded-lg">
-                <h4 className="font-medium text-blue-800 mb-1">Подпишитесь на вакансии</h4>
-                <p className="text-sm text-blue-600">Настройте уведомления о новых вакансиях</p>
-              </div>
-              <div className="p-3 bg-purple-50 rounded-lg">
-                <h4 className="font-medium text-purple-800 mb-1">Участвуйте в форуме</h4>
-                <p className="text-sm text-purple-600">Задавайте вопросы опытным коллегам</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Профиль */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <User className="h-5 w-5" />
-            <span>Основная информация</span>
+            <span>Заполнение профиля</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <span className="text-sm text-gray-600">Фото профиля</span>
-                <Badge variant="outline">Не загружено</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <span className="text-sm text-gray-600">Основная информация</span>
-                <Badge variant="default">Заполнено</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <span className="text-sm text-gray-600">Контактные данные</span>
-                <Badge variant="default">Заполнено</Badge>
-              </div>
+          <div className="mb-4">
+            <div className="flex justify-between text-sm mb-2">
+              <span>Прогресс заполнения</span>
+              <span>{profileData.completeness}%</span>
             </div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <span className="text-sm text-gray-600">Опыт работы</span>
-                <Badge variant="outline">Не заполнено</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <span className="text-sm text-gray-600">Документы</span>
-                <Badge variant="outline">Не загружены</Badge>
-              </div>
-              <div className="flex items-center justify-between p-3 border rounded-lg">
-                <span className="text-sm text-gray-600">Верификация</span>
-                <Badge variant="outline">Ожидает</Badge>
-              </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${profileData.completeness}%` }}></div>
             </div>
+          </div>
+          <div className="space-y-2">
+            {profileData.sections?.map((section, index) => (
+              <div key={index} className="flex items-center justify-between">
+                <span className="text-sm text-gray-700">{section.title}</span>
+                <Badge variant={section.completed ? "default" : "outline"}>
+                  {section.completed ? "Готово" : "Не заполнено"}
+                </Badge>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
 
-      {/* Обучение */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <div className="text-xl">🎯</div>
-            <span>Обучающие материалы</span>
-          </CardTitle>
+          <CardTitle>Контактная информация</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-              <div className="text-2xl mb-2">📖</div>
-              <h4 className="font-medium mb-1">Гайды по платформе</h4>
-              <p className="text-sm text-gray-600">Пошаговые инструкции</p>
-            </div>
-            <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-              <div className="text-2xl mb-2">🎥</div>
-              <h4 className="font-medium mb-1">Видео-туры</h4>
-              <p className="text-sm text-gray-600">Обзор всех функций</p>
-            </div>
-            <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-              <div className="text-2xl mb-2">❓</div>
-              <h4 className="font-medium mb-1">FAQ для новичков</h4>
-              <p className="text-sm text-gray-600">Частые вопросы</p>
-            </div>
+        <CardContent className="space-y-3">
+          <div className="flex items-center space-x-3">
+            <Mail className="h-4 w-4 text-gray-400" />
+            <span className="text-sm">{profileData.email}</span>
+          </div>
+          <div className="flex items-center space-x-3">
+            <Phone className="h-4 w-4 text-gray-400" />
+            <span className="text-sm">{profileData.phone}</span>
+          </div>
+          <div className="flex items-center space-x-3">
+            <MapPin className="h-4 w-4 text-gray-400" />
+            <span className="text-sm">{profileData.city}</span>
           </div>
         </CardContent>
       </Card>

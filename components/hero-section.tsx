@@ -1,213 +1,96 @@
 "use client"
-
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Search, TrendingUp, Users, Building, Briefcase, Star } from "lucide-react"
-import { useRegisterAction } from "@/hooks/use-register-action"
-import { useLoginAction } from "@/hooks/use-login-action"
+import HeroTitle from "@/components/hero-title"
+import HeroQuickButtons from "@/components/hero-quick-buttons"
 
 interface HeroSectionProps {
   role?: string
 }
 
 export default function HeroSection({ role = "Гость" }: HeroSectionProps) {
-  const { handleRegister } = useRegisterAction()
-  const { handleLogin } = useLoginAction()
-
-  const getHeroContent = () => {
-    switch (role) {
-      case "Гость":
-        return {
-          title: "Платформа охранной отрасли России",
-          subtitle: "Найдите лучшие ЧОП, вакансии и возможности в сфере частной охраны",
-          cta: "Начать поиск",
-          secondaryCta: "Зарегистрироваться",
-          stats: [
-            { label: "Организаций", value: "2,847", icon: Building },
-            { label: "Вакансий", value: "1,234", icon: Briefcase },
-            { label: "Пользователей", value: "15,678", icon: Users },
-            { label: "Отзывов", value: "8,945", icon: Star },
-          ],
-        }
-      case "Новичок":
-        return {
-          title: "Добро пожаловать в RusGuard!",
-          subtitle: "Завершите настройку профиля и начните поиск работы в охранной сфере",
-          cta: "Заполнить профиль",
-          secondaryCta: "Просмотреть вакансии",
-          stats: [
-            { label: "Профиль заполнен", value: "45%", icon: TrendingUp },
-            { label: "Рекомендуемых вакансий", value: "23", icon: Briefcase },
-            { label: "ЧОП в вашем городе", value: "156", icon: Building },
-            { label: "Новых пользователей", value: "+47", icon: Users },
-          ],
-        }
-      case "Охранник":
-        return {
-          title: "Найдите идеальную работу",
-          subtitle: "Персональные рекомендации вакансий на основе вашего опыта и предпочтений",
-          cta: "Смотреть вакансии",
-          secondaryCta: "Обновить резюме",
-          stats: [
-            { label: "Новых вакансий", value: "12", icon: Briefcase },
-            { label: "Откликов отправлено", value: "8", icon: TrendingUp },
-            { label: "Просмотров профиля", value: "156", icon: Users },
-            { label: "Средняя зарплата", value: "65к", icon: Star },
-          ],
-        }
-      case "Представитель организации":
-        return {
-          title: "Управление вашей организацией",
-          subtitle: "Привлекайте лучших кандидатов и управляйте репутацией вашего ЧОП",
-          cta: "Добавить вакансию",
-          secondaryCta: "Просмотреть кандидатов",
-          stats: [
-            { label: "Активных вакансий", value: "8", icon: Briefcase },
-            { label: "Новых откликов", value: "23", icon: Users },
-            { label: "Рейтинг организации", value: "4.7", icon: Star },
-            { label: "Просмотров профиля", value: "1,247", icon: TrendingUp },
-          ],
-        }
-      case "Модератор":
-        return {
-          title: "Панель модератора",
-          subtitle: "Обеспечивайте качество контента и безопасность платформы",
-          cta: "Рассмотреть жалобы",
-          secondaryCta: "Проверить публикации",
-          stats: [
-            { label: "Новых жалоб", value: "3", icon: TrendingUp },
-            { label: "На модерации", value: "7", icon: Building },
-            { label: "Решено сегодня", value: "12", icon: Star },
-            { label: "Активных модераторов", value: "5", icon: Users },
-          ],
-        }
-      case "Админ":
-        return {
-          title: "Административная панель",
-          subtitle: "Полный контроль над платформой и системными настройками",
-          cta: "Системная аналитика",
-          secondaryCta: "Управление пользователями",
-          stats: [
-            { label: "Всего пользователей", value: "15,678", icon: Users },
-            { label: "Активных организаций", value: "2,847", icon: Building },
-            { label: "Системных событий", value: "156", icon: TrendingUp },
-            { label: "Время работы", value: "99.9%", icon: Star },
-          ],
-        }
-      default:
-        return {
-          title: "Платформа охранной отрасли России",
-          subtitle: "Найдите лучшие ЧОП, вакансии и возможности в сфере частной охраны",
-          cta: "Начать поиск",
-          secondaryCta: "Узнать больше",
-          stats: [],
-        }
-    }
-  }
-
-  const content = getHeroContent()
-
-  const handlePrimaryCTA = () => {
-    switch (role) {
-      case "Гость":
-        console.log("Начать поиск - переход к каталогу")
-        break
-      case "Новичок":
-        console.log("Заполнить профиль - переход к настройкам профиля")
-        break
-      case "Охранник":
-        console.log("Смотреть вакансии - переход к вакансиям")
-        break
-      case "Представитель организации":
-        console.log("Добавить вакансию - переход к созданию вакансии")
-        break
-      case "Модератор":
-        console.log("Рассмотреть жалобы - переход к панели модерации")
-        break
-      case "Админ":
-        console.log("Системная аналитика - переход к админ панели")
-        break
-      default:
-        console.log("Действие по умолчанию")
-    }
-  }
-
-  const handleSecondaryCTA = () => {
-    switch (role) {
-      case "Гость":
-        handleRegister()
-        break
-      case "Новичок":
-        console.log("Просмотреть вакансии - переход к вакансиям")
-        break
-      case "Охранник":
-        console.log("Обновить резюме - переход к профилю")
-        break
-      case "Представитель организации":
-        console.log("Просмотреть кандидатов - переход к кандидатам")
-        break
-      case "Модератор":
-        console.log("Проверить публикации - переход к модерации контента")
-        break
-      case "Админ":
-        console.log("Управление пользователями - переход к управлению")
-        break
-      default:
-        console.log("Узнать больше")
-    }
-  }
-
   return (
-    <section className="bg-gradient-to-br from-blue-50 via-white to-purple-50 py-16 lg:py-24">
+    <section className="relative py-16 bg-white">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center max-w-4xl mx-auto">
-          {/* Роль бейдж */}
-          {role !== "Гость" && (
-            <div className="mb-6">
-              <Badge variant="outline" className="px-4 py-2 text-sm font-medium">
-                {role}
-              </Badge>
+        {/* Основной контент в две колонки */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Левая часть - заголовок (2 колонки) */}
+          <div className="lg:col-span-2">
+            <HeroTitle role={role} />
+
+            {/* Статистика под заголовком */}
+            <div className="mt-8 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-xl font-bold text-blue-600">1,247</div>
+                <div className="text-sm text-gray-600">Организаций</div>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-xl font-bold text-green-600">3,891</div>
+                <div className="text-sm text-gray-600">Вакансий</div>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <div className="text-xl font-bold text-purple-600">15,632</div>
+                <div className="text-sm text-gray-600">Пользователей</div>
+              </div>
+              <div className="text-center p-4 bg-orange-50 rounded-lg">
+                <div className="text-xl font-bold text-orange-600">28,459</div>
+                <div className="text-sm text-gray-600">Сообщений</div>
+              </div>
             </div>
-          )}
-
-          {/* Заголовок */}
-          <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">{content.title}</h1>
-
-          {/* Подзаголовок */}
-          <p className="text-xl text-gray-600 mb-8 leading-relaxed">{content.subtitle}</p>
-
-          {/* CTA кнопки */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button size="lg" className="px-8 py-4 text-lg font-medium" onClick={handlePrimaryCTA}>
-              <Search className="h-5 w-5 mr-2" />
-              {content.cta}
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="px-8 py-4 text-lg font-medium bg-transparent"
-              onClick={handleSecondaryCTA}
-            >
-              {content.secondaryCta}
-            </Button>
           </div>
 
-          {/* Статистика */}
-          {content.stats.length > 0 && (
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 max-w-4xl mx-auto">
-              {content.stats.map((stat, index) => (
-                <div key={index} className="text-center">
-                  <div className="flex justify-center mb-3">
-                    <div className="p-3 bg-white rounded-full shadow-sm border">
-                      <stat.icon className="h-6 w-6 text-blue-600" />
-                    </div>
+          {/* Правая часть - преимущества (1 колонка) */}
+          <div className="lg:col-span-1">
+            <div className="bg-gray-50 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Почему RusGuard?</h3>
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold">✓</span>
                   </div>
-                  <div className="text-2xl lg:text-3xl font-bold text-gray-900 mb-1">{stat.value}</div>
-                  <div className="text-sm text-gray-600">{stat.label}</div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-sm">Проверенные ЧОПы</h4>
+                    <p className="text-xs text-gray-600">Только лицензированные организации</p>
+                  </div>
                 </div>
-              ))}
+
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold">💼</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-sm">Работа мечты</h4>
+                    <p className="text-xs text-gray-600">Тысячи актуальных вакансий</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold">👥</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-sm">Сообщество</h4>
+                    <p className="text-xs text-gray-600">Общение с профессионалами</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white font-bold">🔒</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-sm">Безопасность данных</h4>
+                    <p className="text-xs text-gray-600">Надежная защита информации</p>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
+        </div>
+
+        {/* Быстрые действия под основным контентом */}
+        <div className="mt-12">
+          <div className="max-w-6xl mx-auto">
+            <HeroQuickButtons role={role} />
+          </div>
         </div>
       </div>
     </section>

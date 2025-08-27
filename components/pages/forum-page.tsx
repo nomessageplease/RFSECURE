@@ -12,16 +12,7 @@ export default function ForumPage() {
   useEffect(() => {
     const savedRoleIndex = localStorage.getItem("currentRoleIndex")
     if (savedRoleIndex !== null) {
-      const roles = [
-        "Гость",
-        "Новичок",
-        "Сотрудник охраны",
-        "Управляющий ЧОПа",
-        "Менеджер ЧОПа",
-        "Модератор",
-        "Саппорт",
-        "Суперадмин",
-      ]
+      const roles = ["Гость", "Новичок", "Охранник", "Представитель организации", "Модератор", "Админ"]
       const index = Number.parseInt(savedRoleIndex, 10)
       setCurrentRole(roles[index])
     }
@@ -44,16 +35,16 @@ export default function ForumPage() {
       {/* Универсальная секция с шапкой и быстрыми кнопками */}
       <PageHeaderSection page="forum" role={currentRole} />
 
-      {/* Лидерборд участников форума - под шапкой страницы */}
+      {/* Лидерборд участников - под шапкой страницы */}
       <section className="py-8">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="bg-gradient-to-br from-green-50 to-white rounded-2xl p-6 border border-green-100/50 shadow-sm">
+          <div className="bg-gradient-to-br from-purple-50 to-white rounded-2xl p-6 border border-purple-100/50 shadow-sm">
             <Leaderboard type="forum" role={currentRole} />
           </div>
         </div>
       </section>
 
-      {/* Основной контент: Форум */}
+      {/* Основной контент: Обсуждения */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-6">
           <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">

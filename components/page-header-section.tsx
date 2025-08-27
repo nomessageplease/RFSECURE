@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
-import { useRegisterAction } from "@/hooks/use-register-action"
-import { useNavigationActions } from "@/hooks/use-navigation-actions"
 
 interface PageHeaderSectionProps {
   page: string
@@ -12,9 +10,6 @@ interface PageHeaderSectionProps {
 
 export default function PageHeaderSection({ page, role = "Гость" }: PageHeaderSectionProps) {
   const [userName, setUserName] = useState("")
-  const { handleRegister } = useRegisterAction()
-  const { navigateToVacancies, navigateToOrganizations, navigateToForum, navigateToNews, navigateToHowItWorks } =
-    useNavigationActions()
 
   // В реальном приложении это будет приходить из контекста авторизации
   useEffect(() => {
@@ -26,33 +21,7 @@ export default function PageHeaderSection({ page, role = "Гость" }: PageHea
 
   const handleButtonClick = (action: string) => {
     console.log(`Action clicked: ${action} for role: ${role} on page: ${page}`)
-
-    // Обработка навигационных действий
-    switch (action) {
-      case "register":
-        handleRegister()
-        return
-      case "find-vacancies":
-        navigateToVacancies()
-        return
-      case "browse-vacancies":
-        navigateToVacancies()
-        return
-      case "view-competitors":
-        navigateToOrganizations()
-        return
-      case "browse-topics":
-        navigateToForum()
-        return
-      case "popular-news":
-        navigateToNews()
-        return
-      case "how-it-works":
-        navigateToHowItWorks()
-        return
-      default:
-        console.log(`Action ${action} not implemented yet`)
-    }
+    // Здесь будет логика навигации или других действий
   }
 
   const getPageContent = () => {

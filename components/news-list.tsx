@@ -3,7 +3,6 @@
 import { Calendar, Eye, Heart, Share2, Bookmark, MessageCircle, Building } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { useNewsActions } from "../hooks/use-news-actions"
 
 interface NewsListProps {
   role?: string
@@ -29,7 +28,6 @@ interface NewsItem {
 }
 
 export default function NewsList({ role = "Гость", filters }: NewsListProps) {
-  const { likeNews, saveNews, shareNews, commentNews, readNews } = useNewsActions(role)
   // Создаем массив новостей
   const allNews: NewsItem[] = Array.from({ length: 15 }, (_, index) => ({
     id: index + 1,
@@ -111,6 +109,14 @@ export default function NewsList({ role = "Гость", filters }: NewsListProps
     return colors[category as keyof typeof colors] || "bg-gray-100 text-gray-800"
   }
 
+  const handleAction = (action: string, newsId: number) => {
+    if (role === "Гость" && (action === "like" || action === "save" || action === "comment")) {
+      alert("Для выполнения действия необходимо зарегистрироваться")
+      return
+    }
+    console.log(`Action: ${action}, News ID: ${newsId}`)
+  }
+
   const renderNewsCard = (news: NewsItem) => (
     <article key={news.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow bg-white">
       {/* Заголовок с бейджами */}
@@ -185,22 +191,27 @@ export default function NewsList({ role = "Гость", filters }: NewsListProps
       {/* Кнопки действий */}
       <div className="flex items-center justify-between pt-4 border-t border-gray-200">
         <div className="flex items-center space-x-2">
-          <Button size="sm" onClick={() => readNews(news.id)}>
+          <Button size="sm" onClick={() => handleAction("read", news.id)}>
             Читать полностью
           </Button>
-          <Button variant="outline" size="sm" disabled={role === "Гость"} onClick={() => saveNews(news.id)}>
+          <Button variant="outline" size="sm" disabled={role === "Гость"} onClick={() => handleAction("save", news.id)}>
             <Bookmark className="h-4 w-4 mr-1" />
             {role === "Гость" ? "Войдите для сохранения" : "Сохранить"}
           </Button>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="sm" disabled={role === "Гость"} onClick={() => likeNews(news.id)}>
+          <Button variant="ghost" size="sm" disabled={role === "Гость"} onClick={() => handleAction("like", news.id)}>
             <Heart className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => shareNews(news.id)}>
+          <Button variant="ghost" size="sm" onClick={() => handleAction("share", news.id)}>
             <Share2 className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" disabled={role === "Гость"} onClick={() => commentNews(news.id)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={role === "Гость"}
+            onClick={() => handleAction("comment", news.id)}
+          >
             <MessageCircle className="h-4 w-4" />
           </Button>
         </div>

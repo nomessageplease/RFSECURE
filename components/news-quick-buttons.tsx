@@ -1,24 +1,14 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { useRegisterAction } from "@/hooks/use-register-action"
 
 interface NewsQuickButtonsProps {
   role?: string
 }
 
 export default function NewsQuickButtons({ role = "Гость" }: NewsQuickButtonsProps) {
-  const { handleRegister } = useRegisterAction()
-
   const handleButtonClick = (action: string) => {
     console.log(`Action clicked: ${action} for role: ${role}`)
-
-    // Обработка перехода на страницу регистрации
-    if (action === "register") {
-      handleRegister()
-      return
-    }
-
     // Здесь будет логика навигации или других действий
   }
 

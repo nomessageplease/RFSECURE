@@ -43,12 +43,6 @@ export default function OrganizationCard({ chop, currentRating, role, onClick }:
     )
   }
 
-  const handleClick = () => {
-    // Имитируем переход на страницу организации
-    console.log(`Переход на страницу организации ${chop.id}`)
-    onClick(chop.id)
-  }
-
   return (
     <div
       className={`
@@ -64,7 +58,7 @@ export default function OrganizationCard({ chop, currentRating, role, onClick }:
         }
         hover:scale-[1.02] hover:-translate-y-1
       `}
-      onClick={handleClick}
+      onClick={() => onClick(chop.id)}
     >
       {/* Декоративный элемент для топ-3 */}
       {chop.position <= 3 && (

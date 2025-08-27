@@ -11,16 +11,7 @@ export default function VacanciesPage() {
   useEffect(() => {
     const savedRoleIndex = localStorage.getItem("currentRoleIndex")
     if (savedRoleIndex !== null) {
-      const roles = [
-        "Гость",
-        "Новичок",
-        "Сотрудник охраны",
-        "Управляющий ЧОПа",
-        "Менеджер ЧОПа",
-        "Модератор",
-        "Саппорт",
-        "Суперадмин",
-      ]
+      const roles = ["Гость", "Новичок", "Охранник", "Представитель организации", "Модератор", "Админ"]
       const index = Number.parseInt(savedRoleIndex, 10)
       setCurrentRole(roles[index])
     }
@@ -43,12 +34,10 @@ export default function VacanciesPage() {
       {/* Универсальная секция с шапкой и быстрыми кнопками */}
       <PageHeaderSection page="vacancies" role={currentRole} />
 
-      {/* Основной контент: Список вакансий */}
+      {/* Список вакансий - основная область */}
       <section className="py-16">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-            <VacanciesList role={currentRole} />
-          </div>
+          <VacanciesList role={currentRole} />
         </div>
       </section>
     </main>
