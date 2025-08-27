@@ -2,322 +2,430 @@
 
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   TrendingUp,
   Users,
-  Building,
   Briefcase,
-  MessageSquare,
+  Building,
+  MessageCircle,
   Star,
-  Clock,
-  ArrowRight,
-  Activity,
   Eye,
-  Heart,
-  UserPlus,
+  Clock,
+  Award,
+  Activity,
+  ArrowUp,
+  ArrowDown,
+  Minus,
 } from "lucide-react"
 
-export default function PlatformActivity() {
-  const [activities] = useState([
+interface PlatformActivityProps {
+  role?: string
+}
+
+export default function PlatformActivity({ role = "Гость" }: PlatformActivityProps) {
+  const [stats, setStats] = useState({
+    totalUsers: 15623,
+    activeUsers: 3247,
+    totalOrganizations: 1247,
+    verifiedOrganizations: 892,
+    totalVacancies: 3891,
+    newVacancies: 156,
+    totalReviews: 8934,
+    newReviews: 89,
+  })
+
+  const [recentActivity] = useState([
     {
       id: 1,
-      type: "new_organization",
-      title: "Новая организация зарегистрирована",
-      description: 'ЧОП "Альфа-Безопасность" присоединился к платформе',
+      type: "vacancy",
+      title: "Новая вакансия: Охранник 4 разряда",
+      company: "ЧОП Безопасность Плюс",
+      location: "Москва",
+      salary: "55,000 - 75,000 ₽",
       time: "5 минут назад",
-      icon: Building,
-      color: "text-blue-600 bg-blue-100",
-      action: "Посмотреть профиль",
+      isHot: true,
     },
     {
       id: 2,
-      type: "new_vacancy",
-      title: "Размещена новая вакансия",
-      description: "Охранник КПП в Москве, зарплата 55 000 ₽",
+      type: "review",
+      title: "Новый отзыв о ЧОП Щит",
+      author: "Александр К.",
+      rating: 4.5,
+      text: "Отличные условия работы, стабильная зарплата...",
       time: "12 минут назад",
-      icon: Briefcase,
-      color: "text-green-600 bg-green-100",
-      action: "Смотреть вакансию",
+      isHot: false,
     },
     {
       id: 3,
-      type: "new_review",
-      title: "Новый отзыв о работодателе",
-      description: 'Отзыв о ЧОП "Стражник" - рейтинг 4.5/5',
-      time: "25 минут назад",
-      icon: Star,
-      color: "text-yellow-600 bg-yellow-100",
-      action: "Читать отзыв",
+      type: "organization",
+      title: "Новая организация: Гарант Плюс",
+      location: "Екатеринбург",
+      specialization: "Банковская безопасность",
+      time: "1 час назад",
+      isHot: false,
     },
     {
       id: 4,
-      type: "forum_post",
-      title: "Активность на форуме",
-      description: "Новая тема: Особенности работы в ночную смену",
-      time: "1 час назад",
-      icon: MessageSquare,
-      color: "text-purple-600 bg-purple-100",
-      action: "Перейти к обсуждению",
-    },
-    {
-      id: 5,
-      type: "user_joined",
-      title: "Новые пользователи",
-      description: "За последний час зарегистрировалось 12 новых пользователей",
-      time: "1 час назад",
-      icon: UserPlus,
-      color: "text-indigo-600 bg-indigo-100",
-      action: "Статистика",
+      type: "user",
+      title: "Новый пользователь: Михаил С.",
+      role: "Охранник",
+      experience: "3 года опыта",
+      time: "2 часа назад",
+      isHot: false,
     },
   ])
 
-  const [stats] = useState({
-    totalUsers: 15623,
-    activeToday: 1247,
-    newVacancies: 89,
-    newOrganizations: 12,
-    forumPosts: 156,
-    reviews: 34,
-  })
+  const [topContent] = useState([
+    {
+      id: 1,
+      type: "organization",
+      title: "ЧОП Безопасность Плюс",
+      rating: 4.8,
+      views: 2156,
+      trend: "up",
+      change: "+12%",
+    },
+    {
+      id: 2,
+      type: "vacancy",
+      title: "Старший охранник ТЦ",
+      company: "Охранное агентство Щит",
+      views: 1834,
+      trend: "up",
+      change: "+8%",
+    },
+    {
+      id: 3,
+      type: "news",
+      title: "Новые требования к лицензированию ЧОП",
+      views: 1247,
+      trend: "down",
+      change: "-3%",
+    },
+  ])
 
-  const handleActivityClick = (activityId: number, type: string) => {
-    console.log(`Переход к активности ${activityId} типа ${type}`)
-
-    // Навигация в зависимости от типа активности
-    switch (type) {
-      case "new_organization":
-        window.dispatchEvent(new CustomEvent("pageChanged", { detail: { page: "organizations" } }))
-        break
-      case "new_vacancy":
-        window.dispatchEvent(new CustomEvent("pageChanged", { detail: { page: "vacancies" } }))
-        break
-      case "new_review":
-        window.dispatchEvent(new CustomEvent("pageChanged", { detail: { page: "organizations" } }))
-        break
-      case "forum_post":
-        window.dispatchEvent(new CustomEvent("pageChanged", { detail: { page: "forum" } }))
-        break
-      case "user_joined":
-        // Для админов и модераторов - статистика
-        break
+  const getTrendIcon = (trend: string) => {
+    switch (trend) {
+      case "up":
+        return <ArrowUp className="h-3 w-3 text-green-500" />
+      case "down":
+        return <ArrowDown className="h-3 w-3 text-red-500" />
       default:
-        break
+        return <Minus className="h-3 w-3 text-gray-500" />
     }
   }
 
-  const StatCard = ({ icon: Icon, title, value, change, color }: any) => (
-    <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className={`p-2 rounded-lg ${color}`}>
-              <Icon className="h-5 w-5" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">{title}</p>
-              <p className="text-2xl font-bold text-gray-900">{value.toLocaleString()}</p>
-            </div>
-          </div>
-          {change && (
-            <div className="flex items-center text-green-600 text-sm">
-              <TrendingUp className="h-4 w-4 mr-1" />
-              <span>+{change}%</span>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  )
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case "vacancy":
+        return <Briefcase className="h-4 w-4 text-blue-600" />
+      case "review":
+        return <Star className="h-4 w-4 text-yellow-600" />
+      case "organization":
+        return <Building className="h-4 w-4 text-purple-600" />
+      case "user":
+        return <Users className="h-4 w-4 text-green-600" />
+      default:
+        return <Activity className="h-4 w-4 text-gray-600" />
+    }
+  }
+
+  const handleViewMore = (type: string) => {
+    console.log(`Просмотр больше ${type}`)
+    // Здесь будет навигация к соответствующей странице
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Заголовок */}
-      <div className="flex items-center">
-        <span className="inline-block w-8 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mr-3 rounded-full"></span>
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Активность платформы</h2>
-          <p className="text-gray-600 text-sm mt-1">Последние события и статистика</p>
-        </div>
+    <div className="space-y-6">
+      {/* Общая статистика */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Пользователи</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalUsers.toLocaleString()}</p>
+                <p className="text-xs text-green-600 flex items-center mt-1">
+                  <TrendingUp className="h-3 w-3 mr-1" />+{stats.activeUsers.toLocaleString()} активных
+                </p>
+              </div>
+              <Users className="h-8 w-8 text-blue-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Организации</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalOrganizations.toLocaleString()}</p>
+                <p className="text-xs text-green-600 flex items-center mt-1">
+                  <Award className="h-3 w-3 mr-1" />
+                  {stats.verifiedOrganizations} проверенных
+                </p>
+              </div>
+              <Building className="h-8 w-8 text-purple-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Вакансии</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalVacancies.toLocaleString()}</p>
+                <p className="text-xs text-green-600 flex items-center mt-1">
+                  <TrendingUp className="h-3 w-3 mr-1" />+{stats.newVacancies} новых
+                </p>
+              </div>
+              <Briefcase className="h-8 w-8 text-green-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-md transition-shadow">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Отзывы</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalReviews.toLocaleString()}</p>
+                <p className="text-xs text-green-600 flex items-center mt-1">
+                  <Star className="h-3 w-3 mr-1" />+{stats.newReviews} новых
+                </p>
+              </div>
+              <MessageCircle className="h-8 w-8 text-yellow-600" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Статистические карточки */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <StatCard
-          icon={Users}
-          title="Всего пользователей"
-          value={stats.totalUsers}
-          change={8}
-          color="text-blue-600 bg-blue-100"
-        />
-        <StatCard
-          icon={Activity}
-          title="Активны сегодня"
-          value={stats.activeToday}
-          change={12}
-          color="text-green-600 bg-green-100"
-        />
-        <StatCard
-          icon={Briefcase}
-          title="Новые вакансии"
-          value={stats.newVacancies}
-          change={15}
-          color="text-orange-600 bg-orange-100"
-        />
-        <StatCard
-          icon={Building}
-          title="Новые ЧОПы"
-          value={stats.newOrganizations}
-          change={5}
-          color="text-purple-600 bg-purple-100"
-        />
-        <StatCard
-          icon={MessageSquare}
-          title="Сообщения на форуме"
-          value={stats.forumPosts}
-          change={20}
-          color="text-indigo-600 bg-indigo-100"
-        />
-        <StatCard
-          icon={Star}
-          title="Новые отзывы"
-          value={stats.reviews}
-          change={10}
-          color="text-yellow-600 bg-yellow-100"
-        />
-      </div>
-
-      {/* Лента активности */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Левая колонка - последние события */}
+        {/* Последняя активность */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <Clock className="h-5 w-5 mr-2 text-gray-600" />
-              Последние события
+            <CardTitle className="flex items-center space-x-2">
+              <Activity className="h-5 w-5" />
+              <span>Последняя активность</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {activities.map((activity) => {
-              const IconComponent = activity.icon
-              return (
-                <div
-                  key={activity.id}
-                  className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer group"
-                  onClick={() => handleActivityClick(activity.id, activity.type)}
-                >
-                  <div className={`p-2 rounded-lg ${activity.color} flex-shrink-0`}>
-                    <IconComponent className="h-4 w-4" />
+            {recentActivity.map((activity) => (
+              <div
+                key={activity.id}
+                className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <div className="flex-shrink-0 mt-1">{getActivityIcon(activity.type)}</div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <h4 className="font-medium text-gray-900 text-sm">{activity.title}</h4>
+                    {activity.isHot && <Badge className="bg-red-100 text-red-800 text-xs">Горячее</Badge>}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 text-sm group-hover:text-blue-600 transition-colors">
-                      {activity.title}
-                    </p>
-                    <p className="text-gray-600 text-sm mt-1 line-clamp-2">{activity.description}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <span className="text-xs text-gray-500">{activity.time}</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs text-blue-600 hover:text-blue-800 p-0 h-auto opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        {activity.action}
-                        <ArrowRight className="ml-1 h-3 w-3" />
-                      </Button>
-                    </div>
+
+                  <div className="space-y-1">
+                    {activity.type === "vacancy" && (
+                      <>
+                        <p className="text-sm text-gray-600">
+                          {activity.company} • {activity.location}
+                        </p>
+                        <p className="text-sm font-medium text-green-600">{activity.salary}</p>
+                      </>
+                    )}
+                    {activity.type === "review" && (
+                      <>
+                        <p className="text-sm text-gray-600">От {activity.author}</p>
+                        <div className="flex items-center space-x-2">
+                          <div className="flex items-center">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`h-3 w-3 ${
+                                  star <= activity.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm text-gray-600">{activity.rating}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 line-clamp-1">{activity.text}</p>
+                      </>
+                    )}
+                    {activity.type === "organization" && (
+                      <>
+                        <p className="text-sm text-gray-600">{activity.location}</p>
+                        <p className="text-sm text-blue-600">{activity.specialization}</p>
+                      </>
+                    )}
+                    {activity.type === "user" && (
+                      <>
+                        <p className="text-sm text-gray-600">Роль: {activity.role}</p>
+                        <p className="text-sm text-blue-600">{activity.experience}</p>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="flex items-center space-x-1 mt-2">
+                    <Clock className="h-3 w-3 text-gray-400" />
+                    <span className="text-xs text-gray-500">{activity.time}</span>
                   </div>
                 </div>
-              )
-            })}
+              </div>
+            ))}
+
+            <div className="pt-4 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full bg-transparent"
+                onClick={() => handleViewMore("activity")}
+              >
+                Показать больше активности
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Правая колонка - популярное */}
+        {/* Популярный контент */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <TrendingUp className="h-5 w-5 mr-2 text-gray-600" />
-              Популярное сегодня
+            <CardTitle className="flex items-center space-x-2">
+              <TrendingUp className="h-5 w-5" />
+              <span>Популярное сегодня</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Популярные вакансии */}
-            <div className="space-y-3">
-              <h4 className="font-medium text-gray-900 text-sm">Популярные вакансии</h4>
-              {[
-                { title: "Охранник КПП", company: "ЧОП Альфа", views: 234 },
-                { title: "Оператор видеонаблюдения", company: "Безопасность+", views: 189 },
-                { title: "Старший охранник", company: "Стражник", views: 156 },
-              ].map((vacancy, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-2 rounded hover:bg-gray-50 cursor-pointer"
-                  onClick={() =>
-                    window.dispatchEvent(new CustomEvent("pageChanged", { detail: { page: "vacancies" } }))
-                  }
-                >
-                  <div>
-                    <p className="font-medium text-sm text-gray-900">{vacancy.title}</p>
-                    <p className="text-xs text-gray-600">{vacancy.company}</p>
-                  </div>
-                  <div className="flex items-center text-xs text-gray-500">
-                    <Eye className="h-3 w-3 mr-1" />
-                    {vacancy.views}
+            {topContent.map((content, index) => (
+              <div
+                key={content.id}
+                className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span className="text-sm font-bold text-blue-600">#{index + 1}</span>
                   </div>
                 </div>
-              ))}
-            </div>
 
-            <div className="border-t border-gray-200 pt-4">
-              <h4 className="font-medium text-gray-900 text-sm mb-3">Популярные организации</h4>
-              {[
-                { name: "ЧОП Альфа-Безопасность", rating: 4.8, likes: 45 },
-                { name: "Стражник Плюс", rating: 4.6, likes: 38 },
-                { name: "Безопасность Москвы", rating: 4.5, likes: 32 },
-              ].map((org, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-2 rounded hover:bg-gray-50 cursor-pointer"
-                  onClick={() =>
-                    window.dispatchEvent(new CustomEvent("pageChanged", { detail: { page: "organizations" } }))
-                  }
-                >
-                  <div>
-                    <p className="font-medium text-sm text-gray-900">{org.name}</p>
-                    <div className="flex items-center">
-                      <Star className="h-3 w-3 text-yellow-400 fill-yellow-400 mr-1" />
-                      <span className="text-xs text-gray-600">{org.rating}</span>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-gray-900 text-sm line-clamp-1">{content.title}</h4>
+                  {content.company && <p className="text-sm text-gray-600">{content.company}</p>}
+                  {content.rating && (
+                    <div className="flex items-center space-x-1 mt-1">
+                      <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
+                      <span className="text-sm text-gray-600">{content.rating}</span>
                     </div>
+                  )}
+                </div>
+
+                <div className="flex-shrink-0 text-right">
+                  <div className="flex items-center space-x-1">
+                    <Eye className="h-3 w-3 text-gray-400" />
+                    <span className="text-sm text-gray-600">{content.views.toLocaleString()}</span>
                   </div>
-                  <div className="flex items-center text-xs text-gray-500">
-                    <Heart className="h-3 w-3 mr-1" />
-                    {org.likes}
+                  <div className="flex items-center space-x-1 mt-1">
+                    {getTrendIcon(content.trend)}
+                    <span
+                      className={`text-xs ${
+                        content.trend === "up"
+                          ? "text-green-600"
+                          : content.trend === "down"
+                            ? "text-red-600"
+                            : "text-gray-600"
+                      }`}
+                    >
+                      {content.change}
+                    </span>
                   </div>
                 </div>
-              ))}
+              </div>
+            ))}
+
+            <div className="pt-4 border-t">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full bg-transparent"
+                onClick={() => handleViewMore("trending")}
+              >
+                Весь рейтинг популярности
+              </Button>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Призыв к действию */}
-      <div className="text-center py-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-100">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">Станьте частью активного сообщества</h3>
-        <p className="text-gray-600 mb-4">
-          Присоединяйтесь к обсуждениям, делитесь опытом и находите новые возможности
-        </p>
-        <div className="flex justify-center space-x-4">
-          <Button onClick={() => window.dispatchEvent(new CustomEvent("pageChanged", { detail: { page: "forum" } }))}>
-            Перейти на форум
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => window.dispatchEvent(new CustomEvent("pageChanged", { detail: { page: "organizations" } }))}
-          >
-            Найти работодателя
-          </Button>
-        </div>
-      </div>
+      {/* Быстрые действия для разных ролей */}
+      {role !== "Гость" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Рекомендации для вас</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {role === "Охранник" && (
+                <>
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <Briefcase className="h-6 w-6 text-blue-600 mb-2" />
+                    <h4 className="font-medium text-gray-900 mb-1">Новые вакансии</h4>
+                    <p className="text-sm text-gray-600 mb-3">12 новых вакансий в вашем городе</p>
+                    <Button size="sm" onClick={() => handleViewMore("vacancies")}>
+                      Посмотреть
+                    </Button>
+                  </div>
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <Star className="h-6 w-6 text-green-600 mb-2" />
+                    <h4 className="font-medium text-gray-900 mb-1">Оставить отзыв</h4>
+                    <p className="text-sm text-gray-600 mb-3">Поделитесь опытом работы</p>
+                    <Button size="sm" variant="outline" onClick={() => handleViewMore("reviews")}>
+                      Написать
+                    </Button>
+                  </div>
+                  <div className="p-4 bg-purple-50 rounded-lg">
+                    <Users className="h-6 w-6 text-purple-600 mb-2" />
+                    <h4 className="font-medium text-gray-900 mb-1">Форум</h4>
+                    <p className="text-sm text-gray-600 mb-3">Обсуждения коллег</p>
+                    <Button size="sm" variant="outline" onClick={() => handleViewMore("forum")}>
+                      Участвовать
+                    </Button>
+                  </div>
+                </>
+              )}
+
+              {role === "Представитель организации" && (
+                <>
+                  <div className="p-4 bg-orange-50 rounded-lg">
+                    <Briefcase className="h-6 w-6 text-orange-600 mb-2" />
+                    <h4 className="font-medium text-gray-900 mb-1">Разместить вакансию</h4>
+                    <p className="text-sm text-gray-600 mb-3">Найдите лучших кандидатов</p>
+                    <Button size="sm" onClick={() => handleViewMore("post-vacancy")}>
+                      Разместить
+                    </Button>
+                  </div>
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <Eye className="h-6 w-6 text-blue-600 mb-2" />
+                    <h4 className="font-medium text-gray-900 mb-1">Аналитика</h4>
+                    <p className="text-sm text-gray-600 mb-3">Статистика просмотров</p>
+                    <Button size="sm" variant="outline" onClick={() => handleViewMore("analytics")}>
+                      Посмотреть
+                    </Button>
+                  </div>
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <Building className="h-6 w-6 text-green-600 mb-2" />
+                    <h4 className="font-medium text-gray-900 mb-1">Профиль ЧОП</h4>
+                    <p className="text-sm text-gray-600 mb-3">Обновите информацию</p>
+                    <Button size="sm" variant="outline" onClick={() => handleViewMore("organization")}>
+                      Редактировать
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }

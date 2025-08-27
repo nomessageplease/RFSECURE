@@ -1,204 +1,305 @@
 "use client"
 
-import { CheckCircle, Star, MapPin, Users, TrendingUp, Eye } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  Star,
+  MapPin,
+  Users,
+  Briefcase,
+  CheckCircle,
+  AlertTriangle,
+  Eye,
+  Heart,
+  MessageCircle,
+  TrendingUp,
+  Award,
+  Clock,
+} from "lucide-react"
 
-interface ChopCardData {
-  id: number
-  name: string
-  logo: string
-  cities: string[]
-  verified: boolean
-  yearsInBusiness: number
-  vacancies: number
-  rating: number
-  employees: number
-  specializations: string[]
+interface ChopCardsProps {
+  role?: string
 }
 
-export default function ChopCards() {
-  // Создаем массив из 10 карточек с данными
-  const chopCards: ChopCardData[] = Array.from({ length: 10 }, (_, index) => ({
-    id: index + 1,
-    name: `ЧОП "Безопасность ${index + 1}"`,
-    logo: `/placeholder.svg?height=40&width=40&query=logo${index + 1}`,
-    cities:
-      index % 3 === 0
-        ? ["Москва", "Санкт-Петербург", "Казань"]
-        : index % 2 === 0
-          ? ["Москва", "Екатеринбург"]
-          : ["Москва"],
-    verified: index % 3 === 0,
-    yearsInBusiness: 5 + index,
-    vacancies: index * 2 + 1,
-    rating: 3 + (index % 3),
-    employees: 50 + index * 25,
-    specializations: index % 2 === 0 ? ["Банки", "Офисы"] : ["Торговля", "Склады"],
-  }))
+export default function ChopCards({ role = "Гость" }: ChopCardsProps) {
+  const [favorites, setFavorites] = useState<number[]>([])
 
-  // Функция для отображения звезд рейтинга
+  const organizations = [
+    {
+      id: 1,
+      name: "ЧОП Безопасность Плюс",
+      logo: "/placeholder.svg?height=60&width=60&text=БП",
+      rating: 4.8,
+      reviewsCount: 156,
+      city: "Москва",
+      employees: 450,
+      vacancies: 12,
+      verified: true,
+      hasComplaints: false,
+      specializations: ["Банки", "Торговые центры", "Офисы"],
+      founded: 2010,
+      description: "Ведущая охранная организация с безупречной репутацией",
+      salaryRange: "45,000 - 85,000 ₽",
+      responseTime: "2 часа",
+      hiringRate: 85,
+      benefits: ["ДМС", "Обучение", "Карьерный рост"],
+      recentActivity: "Разместил 3 вакансии сегодня",
+    },
+    {
+      id: 2,
+      name: "Охранное агентство Щит",
+      logo: "/placeholder.svg?height=60&width=60&text=Щит",
+      rating: 4.6,
+      reviewsCount: 89,
+      city: "Санкт-Петербург",
+      employees: 280,
+      vacancies: 8,
+      verified: true,
+      hasComplaints: false,
+      specializations: ["Склады", "Производство", "Логистика"],
+      founded: 2015,
+      description: "Специализируемся на охране промышленных объектов",
+      salaryRange: "40,000 - 70,000 ₽",
+      responseTime: "4 часа",
+      hiringRate: 78,
+      benefits: ["Соцпакет", "Премии", "Отпуск"],
+      recentActivity: "Обновил профиль вчера",
+    },
+    {
+      id: 3,
+      name: "Гарант Секьюрити",
+      logo: "/placeholder.svg?height=60&width=60&text=ГС",
+      rating: 4.4,
+      reviewsCount: 203,
+      city: "Екатеринбург",
+      employees: 320,
+      vacancies: 15,
+      verified: false,
+      hasComplaints: true,
+      specializations: ["Мероприятия", "VIP охрана", "Консалтинг"],
+      founded: 2008,
+      description: "Комплексные услуги безопасности для бизнеса",
+      salaryRange: "35,000 - 90,000 ₽",
+      responseTime: "1 день",
+      hiringRate: 65,
+      benefits: ["Гибкий график", "Обучение"],
+      recentActivity: "Активен 3 дня назад",
+    },
+  ]
+
+  const toggleFavorite = (orgId: number) => {
+    if (role === "Гость") {
+      alert("Для добавления в избранное необходимо войти в систему")
+      return
+    }
+
+    setFavorites((prev) => (prev.includes(orgId) ? prev.filter((id) => id !== orgId) : [...prev, orgId]))
+  }
+
+  const handleViewDetails = (orgId: number) => {
+    console.log(`Просмотр деталей организации ${orgId}`)
+    // Здесь будет навигация к детальной странице
+  }
+
+  const handleViewVacancies = (orgId: number) => {
+    console.log(`Просмотр вакансий организации ${orgId}`)
+    // Здесь будет навигация к вакансиям организации
+  }
+
+  const handleContact = (orgId: number) => {
+    if (role === "Гость") {
+      alert("Для связи с организацией необходимо войти в систему")
+      return
+    }
+    console.log(`Связь с организацией ${orgId}`)
+    // Здесь будет открытие чата или формы связи
+  }
+
   const renderRatingStars = (rating: number) => {
     return (
-      <div className="flex items-center">
+      <div className="flex items-center space-x-1">
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            className={`h-3 w-3 ${star <= rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
+            className={`h-4 w-4 ${star <= rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
           />
         ))}
+        <span className="ml-2 text-sm font-medium text-gray-700">{rating}</span>
       </div>
-    )
-  }
-
-  const handleAllOrganizationsClick = () => {
-    window.dispatchEvent(
-      new CustomEvent("pageChanged", {
-        detail: { page: "organizations" },
-      }),
-    )
-  }
-
-  const handleCardClick = (chopId: number) => {
-    console.log(`Переход к организации ${chopId}`)
-    // В реальном приложении здесь будет навигация к детальной странице
-    window.dispatchEvent(
-      new CustomEvent("pageChanged", {
-        detail: { page: "organizations" },
-      }),
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center">
-          <span className="inline-block w-8 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mr-3 rounded-full"></span>
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Лучшие организации</h2>
-            <p className="text-gray-600 text-sm mt-1">Проверенные охранные предприятия</p>
-          </div>
-        </div>
-        <Button
-          variant="outline"
-          className="text-blue-600 hover:text-blue-800 font-medium flex items-center group hover:bg-blue-50 transition-colors bg-transparent"
-          onClick={handleAllOrganizationsClick}
-        >
-          Все организации
-          <span className="ml-1 transition-transform group-hover:translate-x-1">→</span>
-        </Button>
-      </div>
-
-      {/* Горизонтальный скролл контейнер */}
-      <div className="overflow-x-auto">
-        <div className="flex gap-6 pb-4" style={{ width: "max-content" }}>
-          {chopCards.map((chop) => (
-            <div
-              key={chop.id}
-              className="flex-shrink-0 w-80 rounded-xl bg-white hover:shadow-lg transition-all duration-300 overflow-hidden cursor-pointer border border-gray-100 hover:border-blue-200 group"
-              onClick={() => handleCardClick(chop.id)}
-            >
-              {/* Заголовок карточки */}
-              <div className="p-6 border-b border-gray-100">
-                <div className="flex items-center justify-between mb-4">
-                  <img
-                    src={chop.logo || "/placeholder.svg"}
-                    alt={`Логотип ${chop.name}`}
-                    className="h-12 w-12 rounded-full shadow-sm border-2 border-white"
-                  />
-                  {chop.verified && (
-                    <div className="flex items-center text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      <span className="text-xs font-medium">Проверено</span>
-                    </div>
-                  )}
-                </div>
-
-                <h3 className="font-bold text-gray-900 mb-2 text-lg group-hover:text-blue-600 transition-colors">
-                  {chop.name}
-                </h3>
-
-                <div className="space-y-2 text-sm text-gray-600">
-                  <div className="flex items-center">
-                    <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-                    <span>{chop.cities.join(", ")}</span>
-                  </div>
-                  <div className="flex items-center">
-                    <Users className="h-4 w-4 mr-2 text-gray-400" />
-                    <span>{chop.employees} сотрудников</span>
-                  </div>
-                  <div className="flex items-center">
-                    <TrendingUp className="h-4 w-4 mr-2 text-gray-400" />
-                    <span>На рынке {chop.yearsInBusiness} лет</span>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {organizations.map((org) => (
+        <Card key={org.id} className="hover:shadow-lg transition-all duration-200 border-2 hover:border-blue-200">
+          <CardHeader className="pb-4">
+            {/* Шапка карточки */}
+            <div className="flex items-start justify-between">
+              <div className="flex items-center space-x-3">
+                <img
+                  src={org.logo || "/placeholder.svg"}
+                  alt={org.name}
+                  className="h-12 w-12 rounded-lg border-2 border-gray-200"
+                />
+                <div>
+                  <h3 className="font-semibold text-gray-900 text-lg leading-tight">{org.name}</h3>
+                  <div className="flex items-center space-x-2 mt-1">
+                    <MapPin className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm text-gray-600">{org.city}</span>
                   </div>
                 </div>
+              </div>
 
-                {/* Специализации */}
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {chop.specializations.map((spec, index) => (
-                    <Badge key={index} variant="secondary" className="text-xs">
-                      {spec}
+              <button
+                onClick={() => toggleFavorite(org.id)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <Heart
+                  className={`h-5 w-5 ${
+                    favorites.includes(org.id) ? "text-red-500 fill-red-500" : "text-gray-400 hover:text-red-500"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Статусы и бейджи */}
+            <div className="flex items-center space-x-2 mt-3">
+              {org.verified && (
+                <Badge className="bg-green-100 text-green-800 border-green-200">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Проверен
+                </Badge>
+              )}
+              {org.hasComplaints && role !== "Гость" && (
+                <Badge className="bg-red-100 text-red-800 border-red-200">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  Жалобы
+                </Badge>
+              )}
+              <Badge variant="outline" className="text-xs">
+                с {org.founded} года
+              </Badge>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-4">
+            {/* Рейтинг и отзывы */}
+            <div className="flex items-center justify-between">
+              {renderRatingStars(org.rating)}
+              <span className="text-sm text-gray-500">({org.reviewsCount} отзывов)</span>
+            </div>
+
+            {/* Описание */}
+            <p className="text-sm text-gray-600 line-clamp-2">{org.description}</p>
+
+            {/* Специализации */}
+            <div className="flex flex-wrap gap-1">
+              {org.specializations.map((spec, index) => (
+                <Badge key={index} variant="secondary" className="text-xs">
+                  {spec}
+                </Badge>
+              ))}
+            </div>
+
+            {/* Ключевые показатели */}
+            <div className="grid grid-cols-2 gap-4 py-3 border-t border-gray-100">
+              <div className="text-center">
+                <div className="flex items-center justify-center space-x-1">
+                  <Users className="h-4 w-4 text-blue-600" />
+                  <span className="font-semibold text-gray-900">{org.employees}</span>
+                </div>
+                <span className="text-xs text-gray-500">сотрудников</span>
+              </div>
+              <div className="text-center">
+                <div className="flex items-center justify-center space-x-1">
+                  <Briefcase className="h-4 w-4 text-green-600" />
+                  <span className="font-semibold text-gray-900">{org.vacancies}</span>
+                </div>
+                <span className="text-xs text-gray-500">вакансий</span>
+              </div>
+            </div>
+
+            {/* Дополнительная информация для авторизованных */}
+            {role !== "Гость" && (
+              <div className="space-y-3 pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Зарплата:</span>
+                  <span className="font-medium text-gray-900">{org.salaryRange}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Отклик:</span>
+                  <div className="flex items-center space-x-1">
+                    <Clock className="h-3 w-3 text-gray-500" />
+                    <span className="font-medium text-gray-900">{org.responseTime}</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-gray-600">Принимают:</span>
+                  <div className="flex items-center space-x-1">
+                    <TrendingUp className="h-3 w-3 text-green-500" />
+                    <span className="font-medium text-green-600">{org.hiringRate}%</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Льготы */}
+            {role !== "Гость" && org.benefits.length > 0 && (
+              <div className="space-y-2">
+                <span className="text-sm font-medium text-gray-700">Льготы:</span>
+                <div className="flex flex-wrap gap-1">
+                  {org.benefits.map((benefit, index) => (
+                    <Badge key={index} variant="outline" className="text-xs bg-blue-50 text-blue-700">
+                      <Award className="h-3 w-3 mr-1" />
+                      {benefit}
                     </Badge>
                   ))}
                 </div>
               </div>
+            )}
 
-              {/* Статистика */}
-              <div className="p-6 bg-gradient-to-r from-gray-50 to-white">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <div className="flex justify-center mb-2">{renderRatingStars(chop.rating)}</div>
-                    <div className="text-xs text-gray-500">Рейтинг</div>
-                    <div className="text-sm font-semibold text-gray-900">{chop.rating}.0/5.0</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600 mb-1">{chop.vacancies}</div>
-                    <div className="text-xs text-gray-500">Активных</div>
-                    <div className="text-xs text-gray-600">вакансий</div>
-                  </div>
-                </div>
-
-                {/* Кнопки действий */}
-                <div className="flex gap-2 mt-4">
-                  <Button
-                    size="sm"
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleCardClick(chop.id)
-                    }}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    Подробнее
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="flex-1 hover:bg-gray-50 bg-transparent"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      window.dispatchEvent(
-                        new CustomEvent("pageChanged", {
-                          detail: { page: "vacancies" },
-                        }),
-                      )
-                    }}
-                  >
-                    Вакансии
-                  </Button>
-                </div>
-              </div>
+            {/* Последняя активность */}
+            <div className="text-xs text-gray-500 flex items-center space-x-1">
+              <Eye className="h-3 w-3" />
+              <span>{org.recentActivity}</span>
             </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Дополнительная информация */}
-      <div className="text-center py-4">
-        <p className="text-gray-500 text-sm">
-          Показано {chopCards.length} из {chopCards.length * 5} организаций
-        </p>
-      </div>
+            {/* Кнопки действий */}
+            <div className="flex space-x-2 pt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 bg-transparent"
+                onClick={() => handleViewDetails(org.id)}
+              >
+                Подробнее
+              </Button>
+
+              {org.vacancies > 0 && (
+                <Button size="sm" className="flex-1" onClick={() => handleViewVacancies(org.id)}>
+                  Вакансии ({org.vacancies})
+                </Button>
+              )}
+            </div>
+
+            {/* Кнопка связи для авторизованных */}
+            {role !== "Гость" && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full mt-2 bg-transparent"
+                onClick={() => handleContact(org.id)}
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Связаться
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ))}
     </div>
   )
 }

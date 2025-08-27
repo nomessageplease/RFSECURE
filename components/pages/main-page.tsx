@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import HeroSection from "../hero-section"
-import ChopCards from "../chop-cards"
-import VacancyCards from "../vacancy-cards"
-import NewsCards from "../news-cards"
-import PlatformActivity from "../platform-activity"
+import { useEffect, useState } from "react"
+import HeroSection from "@/components/hero-section"
+import ChopCards from "@/components/chop-cards"
+import VacancyCards from "@/components/vacancy-cards"
+import NewsCards from "@/components/news-cards"
+import PlatformActivity from "@/components/platform-activity"
+import MyOrganization from "@/components/my-organization"
 
 export default function MainPage() {
   const [currentRole, setCurrentRole] = useState("Гость")
@@ -20,7 +21,7 @@ export default function MainPage() {
     }
   }, [])
 
-  // Слушаем изменения роли
+  // Слушаем изменения роли из RoleSwitcher
   useEffect(() => {
     const handleRoleChange = (event: CustomEvent) => {
       setCurrentRole(event.detail.role)
@@ -33,32 +34,38 @@ export default function MainPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <main className="flex-1">
       {/* Hero секция */}
       <HeroSection role={currentRole} />
 
-      {/* Основной контент */}
-      <div className="max-w-7xl mx-auto px-6 py-12 space-y-16">
-        {/* Секция организаций */}
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-12">
+        {/* Моя организация - только для представителей */}
+        {currentRole === "Представитель организации" && (
+          <section>
+            <MyOrganization role={currentRole} />
+          </section>
+        )}
+
+        {/* Организации */}
         <section>
-          <ChopCards />
+          <ChopCards role={currentRole} />
         </section>
 
-        {/* Секция вакансий */}
+        {/* Вакансии */}
         <section>
           <VacancyCards role={currentRole} />
         </section>
 
-        {/* Секция новостей */}
+        {/* Новости */}
         <section>
-          <NewsCards />
+          <NewsCards role={currentRole} />
         </section>
 
-        {/* Секция активности платформы */}
+        {/* Активность платформы */}
         <section>
-          <PlatformActivity />
+          <PlatformActivity role={currentRole} />
         </section>
       </div>
-    </div>
+    </main>
   )
 }

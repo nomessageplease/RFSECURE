@@ -3,44 +3,77 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Settings, User, Shield, Building, Star, Crown } from "lucide-react"
+import { User, Shield, Building, Star, Crown, ChevronDown, Check, X } from "lucide-react"
+
+const roles = [
+  {
+    id: 0,
+    name: "Гость",
+    description: "Просмотр публичной информации",
+    icon: User,
+    color: "bg-gray-100 text-gray-800",
+    access: ["Просмотр организаций", "Просмотр вакансий", "Чтение форума"],
+  },
+  {
+    id: 1,
+    name: "Новичок",
+    description: "Новый пользователь на платформе",
+    icon: User,
+    color: "bg-blue-100 text-blue-800",
+    access: ["Создание профиля", "Базовый поиск", "Участие в форуме"],
+  },
+  {
+    id: 2,
+    name: "Охранник",
+    description: "Сотрудник охранной организации",
+    icon: Shield,
+    color: "bg-green-100 text-green-800",
+    access: ["Поиск работы", "Отклики на вакансии", "Отзывы о ЧОП", "Полный доступ к форуму"],
+  },
+  {
+    id: 3,
+    name: "Представитель организации",
+    description: "HR или руководитель ЧОП",
+    icon: Building,
+    color: "bg-orange-100 text-orange-800",
+    access: ["Размещение вакансий", "Поиск кандидатов", "Управление профилем ЧОП", "Аналитика"],
+  },
+  {
+    id: 4,
+    name: "Модератор",
+    description: "Модерация контента платформы",
+    icon: Star,
+    color: "bg-purple-100 text-purple-800",
+    access: ["Модерация отзывов", "Обработка жалоб", "Контроль качества", "Поддержка пользователей"],
+  },
+  {
+    id: 5,
+    name: "Админ",
+    description: "Полный доступ к системе",
+    icon: Crown,
+    color: "bg-red-100 text-red-800",
+    access: ["Управление пользователями", "Системные настройки", "Полная аналитика", "Управление ЧОП"],
+  },
+]
 
 export default function RoleSwitcher() {
   const [currentRoleIndex, setCurrentRoleIndex] = useState(0)
   const [isOpen, setIsOpen] = useState(false)
 
-  const roles = [
-    { name: "Гость", icon: User, color: "bg-gray-500", description: "Просмотр без регистрации" },
-    { name: "Новичок", icon: User, color: "bg-blue-500", description: "Новый пользователь" },
-    { name: "Охранник", icon: Shield, color: "bg-green-500", description: "Ищет работу в охране" },
-    { name: "Представитель организации", icon: Building, color: "bg-orange-500", description: "Представляет ЧОП" },
-    { name: "Модератор", icon: Star, color: "bg-purple-500", description: "Модерирует контент" },
-    { name: "Админ", icon: Crown, color: "bg-red-500", description: "Полный доступ" },
-  ]
-
-  // Загружаем сохраненную роль при инициализации
   useEffect(() => {
     const savedRoleIndex = localStorage.getItem("currentRoleIndex")
     if (savedRoleIndex !== null) {
-      const index = Number.parseInt(savedRoleIndex, 10)
-      setCurrentRoleIndex(index)
-      // Отправляем событие для обновления интерфейса
-      window.dispatchEvent(
-        new CustomEvent("roleChanged", {
-          detail: { role: roles[index].name },
-        }),
-      )
+      setCurrentRoleIndex(Number.parseInt(savedRoleIndex, 10))
     }
   }, [])
 
-  const handleRoleChange = (newRoleIndex: number) => {
-    setCurrentRoleIndex(newRoleIndex)
-    localStorage.setItem("currentRoleIndex", newRoleIndex.toString())
+  const handleRoleChange = (roleIndex: number) => {
+    setCurrentRoleIndex(roleIndex)
+    localStorage.setItem("currentRoleIndex", roleIndex.toString())
 
     // Отправляем событие для обновления всего интерфейса
     const event = new CustomEvent("roleChanged", {
-      detail: { role: roles[newRoleIndex].name },
+      detail: { role: roles[roleIndex].name, roleIndex },
     })
     window.dispatchEvent(event)
 
@@ -51,78 +84,84 @@ export default function RoleSwitcher() {
   const IconComponent = currentRole.icon
 
   return (
-    <>
-      {/* Кнопка переключения ролей */}
-      <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-6 right-6 z-50">
+      {/* Основная кнопка */}
+      <div className="relative">
         <Button
           onClick={() => setIsOpen(!isOpen)}
-          className={`${currentRole.color} hover:opacity-90 text-white shadow-lg hover:shadow-xl transition-all duration-200 rounded-full p-3`}
+          className={`${currentRole.color} hover:shadow-lg transition-all duration-200 h-14 px-4 rounded-full shadow-lg`}
           size="lg"
         >
           <IconComponent className="h-5 w-5 mr-2" />
-          <span className="hidden sm:inline">{currentRole.name}</span>
-          <Settings className="h-4 w-4 ml-2" />
+          <span className="font-medium">{currentRole.name}</span>
+          <ChevronDown className={`h-4 w-4 ml-2 transition-transform ${isOpen ? "rotate-180" : ""}`} />
         </Button>
-      </div>
 
-      {/* Панель выбора роли */}
-      {isOpen && (
-        <div className="fixed bottom-20 right-6 z-50">
-          <Card className="w-80 shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-            <CardContent className="p-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-900">Выберите роль</h3>
-                  <Button variant="ghost" size="sm" onClick={() => setIsOpen(false)}>
-                    ✕
-                  </Button>
-                </div>
+        {/* Выпадающее меню */}
+        {isOpen && (
+          <Card className="absolute bottom-16 right-0 w-80 shadow-2xl border-2 animate-in slide-in-from-bottom-2">
+            <CardContent className="p-0">
+              <div className="p-4 border-b bg-gray-50">
+                <h3 className="font-semibold text-gray-900 mb-1">Выберите роль</h3>
+                <p className="text-sm text-gray-600">Интерфейс адаптируется под выбранную роль</p>
+              </div>
 
-                {roles.map((role, index) => {
+              <div className="max-h-96 overflow-y-auto">
+                {roles.map((role) => {
                   const RoleIcon = role.icon
-                  const isActive = index === currentRoleIndex
+                  const isSelected = currentRoleIndex === role.id
 
                   return (
                     <button
-                      key={index}
-                      onClick={() => handleRoleChange(index)}
-                      className={`w-full p-3 rounded-lg border-2 transition-all duration-200 text-left ${
-                        isActive
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                      key={role.id}
+                      onClick={() => handleRoleChange(role.id)}
+                      className={`w-full p-4 text-left hover:bg-gray-50 transition-colors border-b last:border-b-0 ${
+                        isSelected ? "bg-blue-50 border-blue-200" : ""
                       }`}
                     >
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-2 rounded-full ${role.color} text-white`}>
+                      <div className="flex items-start space-x-3">
+                        <div className={`p-2 rounded-lg ${role.color} flex-shrink-0`}>
                           <RoleIcon className="h-4 w-4" />
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2">
-                            <span className="font-medium text-gray-900">{role.name}</span>
-                            {isActive && (
-                              <Badge variant="default" className="text-xs">
-                                Активная
-                              </Badge>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="font-medium text-gray-900">{role.name}</h4>
+                            {isSelected && <Check className="h-4 w-4 text-blue-600" />}
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">{role.description}</p>
+
+                          <div className="space-y-1">
+                            {role.access.slice(0, 2).map((access, index) => (
+                              <div key={index} className="flex items-center text-xs text-gray-500">
+                                <div className="w-1 h-1 bg-gray-400 rounded-full mr-2"></div>
+                                {access}
+                              </div>
+                            ))}
+                            {role.access.length > 2 && (
+                              <div className="text-xs text-gray-400">+{role.access.length - 2} возможностей</div>
                             )}
                           </div>
-                          <p className="text-xs text-gray-600 mt-1">{role.description}</p>
                         </div>
                       </div>
                     </button>
                   )
                 })}
+              </div>
 
-                <div className="pt-3 border-t border-gray-200">
-                  <p className="text-xs text-gray-500 text-center">Роль влияет на доступные функции и интерфейс</p>
-                </div>
+              <div className="p-4 border-t bg-gray-50">
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="w-full flex items-center justify-center space-x-2 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                  <span className="text-sm">Закрыть</span>
+                </button>
               </div>
             </CardContent>
           </Card>
-        </div>
-      )}
-
-      {/* Overlay для закрытия панели */}
-      {isOpen && <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />}
-    </>
+        )}
+      </div>
+    </div>
   )
 }
